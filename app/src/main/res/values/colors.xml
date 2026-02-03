@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- NotLoco Brand Colors -->
+    <color name="nl_fff9ea">#FFF9EA</color>
+    <color name="nl_f97f37">#F97F37</color>
+    <color name="nl_black">#000000</color>
+    <color name="nl_white">#FFFFFF</color>
+    <color name="nl_gray">#808080</color>
+    <color name="nl_light_gray">#F5F5F5</color>
+</resources>
