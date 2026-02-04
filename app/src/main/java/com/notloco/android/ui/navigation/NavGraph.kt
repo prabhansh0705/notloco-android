@@ -124,7 +124,7 @@ fun NotLocoNavGraph(
 }
 
 // Helper ViewModel to access AuthRepository
-@androidx.lifecycle.ViewModel
+@dagger.hilt.android.lifecycle.HiltViewModel
 class AuthViewModel @javax.inject.Inject constructor(
     val authRepository: AuthRepository
 ) : androidx.lifecycle.ViewModel()
