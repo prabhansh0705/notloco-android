@@ -22,7 +22,8 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Signup : Screen("signup")
     object OTP : Screen("otp/{phoneNumber}") {
-        fun createRoute(phoneNumber: String) = "otp/${java.net.URLEncoder.encode(phoneNumber, "UTF-8")}"
+        // Replace + with PLUS to avoid URL encoding issues (+ becomes space when decoded)
+        fun createRoute(phoneNumber: String) = "otp/${phoneNumber.replace("+", "PLUS")}"
     }
     object Home : Screen("home")
     object Journal : Screen("journal")
@@ -99,10 +100,9 @@ fun NotLocoNavGraph(
                 navArgument("phoneNumber") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val phoneNumber = java.net.URLDecoder.decode(
-                backStackEntry.arguments?.getString("phoneNumber") ?: "", 
-                "UTF-8"
-            )
+            // Restore + from PLUS placeholder
+            val phoneNumber = (backStackEntry.arguments?.getString("phoneNumber") ?: "")
+                .replace("PLUS", "+")
             
             OTPScreen(
                 phoneNumber = phoneNumber,
