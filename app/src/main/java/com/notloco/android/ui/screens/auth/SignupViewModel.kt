@@ -24,12 +24,10 @@ class SignupViewModel @Inject constructor(
     fun signup(
         name: String,
         email: String,
-        countryCode: String,
-        mobile: String,
-        userType: String
+        phoneNumber: String
     ) {
         viewModelScope.launch {
-            authRepository.signup(name, email, countryCode, mobile, userType).collect { resource ->
+            authRepository.signup(name, email, phoneNumber).collect { resource ->
                 when (resource) {
                     is Resource.Loading -> {
                         _signupState.value = UiState.Loading

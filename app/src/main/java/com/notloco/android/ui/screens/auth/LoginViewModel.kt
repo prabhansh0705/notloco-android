@@ -21,9 +21,9 @@ class LoginViewModel @Inject constructor(
     private val _loginState = MutableStateFlow<UiState<LoginResponse>>(UiState.Idle)
     val loginState: StateFlow<UiState<LoginResponse>> = _loginState.asStateFlow()
 
-    fun login(countryCode: String, mobile: String) {
+    fun login(phoneNumber: String) {
         viewModelScope.launch {
-            authRepository.login(countryCode, mobile).collect { resource ->
+            authRepository.login(phoneNumber).collect { resource ->
                 when (resource) {
                     is Resource.Loading -> {
                         _loginState.value = UiState.Loading

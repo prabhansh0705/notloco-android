@@ -80,7 +80,7 @@ fun LoginScreen(
                 NLPrimaryButton(
                     text = "Send Verification Code",
                     onClick = {
-                        viewModel.login(countryCode, phoneNumber)
+                        viewModel.login("$countryCode$phoneNumber")
                     },
                     enabled = phoneNumber.length == 10
                 )

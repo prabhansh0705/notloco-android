@@ -9,19 +9,19 @@ import retrofit2.http.*
 interface ApiService {
 
     // Authentication
-    @POST("auth/login")
+    @POST("user/login/")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
-    @POST("auth/signup")
+    @POST("user/signup/")
     suspend fun signup(@Body request: SignupRequest): Response<SignupResponse>
 
-    @POST("auth/verify-otp")
+    @POST("user/verify-otp/")
     suspend fun verifyOtp(@Body request: VerifyOTPRequest): Response<VerifyOTPResponse>
 
-    @POST("auth/refresh-token")
+    @POST("user/refresh-token/")
     suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<RefreshTokenResponse>
 
-    @POST("auth/resend-otp")
+    @POST("user/resend-otp/")
     suspend fun resendOtp(@Body userId: Map<String, Int>): Response<LoginResponse>
 
     // User Profile

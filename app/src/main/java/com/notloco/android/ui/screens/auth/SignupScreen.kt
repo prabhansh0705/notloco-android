@@ -33,7 +33,7 @@ fun SignupScreen(
 
     LaunchedEffect(signupState) {
         if (signupState is UiState.Success) {
-            val userId = (signupState as UiState.Success).data.data?.userId ?: 0
+            val userId = (signupState as UiState.Success).data.id
             onNavigateToOTP(userId, "$countryCode$phoneNumber")
             viewModel.resetState()
         }
@@ -99,9 +99,7 @@ fun SignupScreen(
                         viewModel.signup(
                             name = name,
                             email = email,
-                            countryCode = countryCode,
-                            mobile = phoneNumber,
-                            userType = "user"
+                            phoneNumber = "$countryCode$phoneNumber"
                         )
                     },
                     enabled = name.isNotEmpty() && 

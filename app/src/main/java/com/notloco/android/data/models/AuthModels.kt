@@ -4,10 +4,8 @@ import com.google.gson.annotations.SerializedName
 
 // Login Request
 data class LoginRequest(
-    @SerializedName("countryCode")
-    val countryCode: String,
-    @SerializedName("mobile")
-    val mobile: String
+    @SerializedName("phone_number")
+    val phoneNumber: String
 )
 
 // Login Response
@@ -31,27 +29,34 @@ data class SignupRequest(
     val name: String,
     @SerializedName("email")
     val email: String,
-    @SerializedName("countryCode")
-    val countryCode: String,
-    @SerializedName("mobile")
-    val mobile: String,
-    @SerializedName("userType")
-    val userType: String = "user"
+    @SerializedName("phone_number")
+    val phoneNumber: String
 )
 
-// Signup Response
+// Signup Response (returned directly, not wrapped)
 data class SignupResponse(
-    @SerializedName("message")
-    val message: String?,
-    @SerializedName("data")
-    val data: SignupData?
-)
-
-data class SignupData(
-    @SerializedName("user_id")
-    val userId: Int,
-    @SerializedName("message")
-    val message: String?
+    @SerializedName("id")
+    val id: Int,
+    @SerializedName("name")
+    val name: String?,
+    @SerializedName("ranking")
+    val ranking: Int?,
+    @SerializedName("is_verified")
+    val isVerified: Boolean = false,
+    @SerializedName("email")
+    val email: String?,
+    @SerializedName("phone_number")
+    val phoneNumber: String?,
+    @SerializedName("is_member")
+    val isMember: Boolean = false,
+    @SerializedName("is_special_member")
+    val isSpecialMember: Boolean = false,
+    @SerializedName("free_trial_used")
+    val freeTrialUsed: Boolean = false,
+    @SerializedName("allow_journal_access")
+    val allowJournalAccess: Boolean = false,
+    @SerializedName("user_created")
+    val userCreated: Boolean = false
 )
 
 // Verify OTP Request

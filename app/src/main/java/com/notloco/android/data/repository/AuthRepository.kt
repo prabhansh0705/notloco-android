@@ -14,10 +14,10 @@ class AuthRepository @Inject constructor(
     private val preferencesManager: PreferencesManager
 ) {
 
-    suspend fun login(countryCode: String, mobile: String): Flow<Resource<LoginResponse>> = flow {
+    suspend fun login(phoneNumber: String): Flow<Resource<LoginResponse>> = flow {
         try {
             emit(Resource.Loading())
-            val response = apiService.login(LoginRequest(countryCode, mobile))
+            val response = apiService.login(LoginRequest(phoneNumber))
             if (response.isSuccessful && response.body() != null) {
                 emit(Resource.Success(response.body()!!))
             } else {
@@ -31,14 +31,12 @@ class AuthRepository @Inject constructor(
     suspend fun signup(
         name: String,
         email: String,
-        countryCode: String,
-        mobile: String,
-        userType: String
+        phoneNumber: String
     ): Flow<Resource<SignupResponse>> = flow {
         try {
             emit(Resource.Loading())
             val response = apiService.signup(
-                SignupRequest(name, email, countryCode, mobile, userType)
+                SignupRequest(name, email, phoneNumber)
             )
             if (response.isSuccessful && response.body() != null) {
                 emit(Resource.Success(response.body()!!))

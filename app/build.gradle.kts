@@ -22,7 +22,7 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "BASE_URL", "\"https://api.notloco.com/v1/\"")
+        buildConfigField("String", "BASE_URL", "\"https://api.notloco.com/api/v1/\"")
         buildConfigField("String", "STRIPE_PUBLISHABLE_KEY", "\"pk_live_51N1oubSFCs5ndJDQyFEe5y3t1u0bKZclbLJhN9Vn1rczshpdESULowuxGwWRU6oHBr95KI6JY1ariS4KRqFmrK3Q00UDbjLszq\"")
         buildConfigField("String", "RAZORPAY_KEY", "\"rzp_live_ERfcgAmA27MIZZ\"")
     }
