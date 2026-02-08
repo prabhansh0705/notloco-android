@@ -83,8 +83,8 @@ fun OTPScreen(
 
                 NLTextField(
                     value = otp,
-                    onValueChange = { if (it.length <= 6) otp = it },
-                    placeholder = "Enter 6-digit OTP",
+                    onValueChange = { if (it.length <= 4) otp = it },
+                    placeholder = "Enter 4-digit OTP",
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
 
@@ -93,7 +93,7 @@ fun OTPScreen(
                     onClick = {
                         viewModel.verifyOtp(userId, otp)
                     },
-                    enabled = otp.length == 6
+                    enabled = otp.length == 4
                 )
 
                 if (otpState is UiState.Error) {

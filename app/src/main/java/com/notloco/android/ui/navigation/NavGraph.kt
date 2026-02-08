@@ -22,7 +22,7 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Signup : Screen("signup")
     object OTP : Screen("otp/{userId}/{phoneNumber}") {
-        fun createRoute(userId: Int, phoneNumber: String) = "otp/$userId/$phoneNumber"
+        fun createRoute(userId: Int, phoneNumber: String) = "otp/$userId/${java.net.URLEncoder.encode(phoneNumber, "UTF-8")}"
     }
     object Home : Screen("home")
     object Journal : Screen("journal")
@@ -101,7 +101,10 @@ fun NotLocoNavGraph(
             )
         ) { backStackEntry ->
             val userId = backStackEntry.arguments?.getInt("userId") ?: 0
-            val phoneNumber = backStackEntry.arguments?.getString("phoneNumber") ?: ""
+            val phoneNumber = java.net.URLDecoder.decode(
+                backStackEntry.arguments?.getString("phoneNumber") ?: "", 
+                "UTF-8"
+            )
             
             OTPScreen(
                 userId = userId,
