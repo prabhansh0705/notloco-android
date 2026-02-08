@@ -2,25 +2,41 @@ package com.notloco.android.data.models
 
 import com.google.gson.annotations.SerializedName
 
-// Login Request
+// Login Request (also used for OTP verification)
 data class LoginRequest(
     @SerializedName("phone_number")
-    val phoneNumber: String
+    val phoneNumber: String,
+    @SerializedName("otp")
+    val otp: Int? = null
 )
 
-// Login Response
+// Login Response (used for both login initiation and OTP verification)
 data class LoginResponse(
-    @SerializedName("message")
-    val message: String?,
-    @SerializedName("data")
-    val data: LoginData?
-)
-
-data class LoginData(
-    @SerializedName("user_id")
-    val userId: Int,
+    @SerializedName("id")
+    val id: Int,
+    @SerializedName("name")
+    val name: String?,
+    @SerializedName("ranking")
+    val ranking: Int?,
+    @SerializedName("is_verified")
+    val isVerified: Boolean = false,
+    @SerializedName("email")
+    val email: String?,
+    @SerializedName("phone_number")
+    val phoneNumber: String?,
+    @SerializedName("token")
+    val token: TokenData?,
+    @SerializedName("otp_verification_status")
+    val otpVerificationStatus: Boolean = false,
+    @SerializedName("onboarding_complete")
+    val onboardingComplete: Boolean = false,
     @SerializedName("message")
     val message: String?
+)
+
+data class TokenData(
+    @SerializedName("access")
+    val access: String
 )
 
 // Signup Request

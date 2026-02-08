@@ -2,9 +2,9 @@ package com.notloco.android.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.notloco.android.data.models.LoginResponse
 import com.notloco.android.data.models.Resource
 import com.notloco.android.data.models.UiState
-import com.notloco.android.data.models.VerifyOTPResponse
 import com.notloco.android.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,15 +18,15 @@ class OTPViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _otpState = MutableStateFlow<UiState<VerifyOTPResponse>>(UiState.Idle)
-    val otpState: StateFlow<UiState<VerifyOTPResponse>> = _otpState.asStateFlow()
+    private val _otpState = MutableStateFlow<UiState<LoginResponse>>(UiState.Idle)
+    val otpState: StateFlow<UiState<LoginResponse>> = _otpState.asStateFlow()
 
     private val _resendState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val resendState: StateFlow<UiState<Unit>> = _resendState.asStateFlow()
 
-    fun verifyOtp(userId: Int, otp: String) {
+    fun verifyOtp(phoneNumber: String, otp: String) {
         viewModelScope.launch {
-            authRepository.verifyOtp(userId, otp).collect { resource ->
+            authRepository.verifyOtp(phoneNumber, otp).collect { resource ->
                 when (resource) {
                     is Resource.Loading -> {
                         _otpState.value = UiState.Loading
@@ -46,9 +46,9 @@ class OTPViewModel @Inject constructor(
         }
     }
 
-    fun resendOtp(userId: Int) {
+    fun resendOtp(phoneNumber: String) {
         viewModelScope.launch {
-            authRepository.resendOtp(userId).collect { resource ->
+            authRepository.resendOtp(phoneNumber).collect { resource ->
                 when (resource) {
                     is Resource.Loading -> {
                         _resendState.value = UiState.Loading

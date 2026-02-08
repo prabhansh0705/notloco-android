@@ -21,7 +21,7 @@ import com.notloco.android.ui.theme.NLTextPrimary
 @Composable
 fun LoginScreen(
     onNavigateToSignup: () -> Unit,
-    onNavigateToOTP: (Int, String) -> Unit,
+    onNavigateToOTP: (String) -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: LoginViewModel = hiltViewModel()
 ) {
@@ -31,8 +31,7 @@ fun LoginScreen(
 
     LaunchedEffect(loginState) {
         if (loginState is UiState.Success) {
-            val userId = (loginState as UiState.Success).data.data?.userId ?: 0
-            onNavigateToOTP(userId, "$countryCode$phoneNumber")
+            onNavigateToOTP("$countryCode$phoneNumber")
             viewModel.resetState()
         }
     }

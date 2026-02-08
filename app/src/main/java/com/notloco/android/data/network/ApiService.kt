@@ -9,20 +9,15 @@ import retrofit2.http.*
 interface ApiService {
 
     // Authentication
+    // Login is used both for initiating login (without OTP) and verifying OTP (with OTP)
     @POST("user/login/")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
     @POST("user/signup/")
     suspend fun signup(@Body request: SignupRequest): Response<SignupResponse>
 
-    @POST("user/verify-otp/")
-    suspend fun verifyOtp(@Body request: VerifyOTPRequest): Response<VerifyOTPResponse>
-
     @POST("user/refresh-token/")
     suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<RefreshTokenResponse>
-
-    @POST("user/resend-otp/")
-    suspend fun resendOtp(@Body userId: Map<String, Int>): Response<LoginResponse>
 
     // User Profile
     @GET("user/profile")

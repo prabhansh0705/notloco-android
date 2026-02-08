@@ -24,7 +24,6 @@ import com.notloco.android.ui.theme.NLTextSecondary
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OTPScreen(
-    userId: Int,
     phoneNumber: String,
     onNavigateToHome: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -91,7 +90,7 @@ fun OTPScreen(
                 NLPrimaryButton(
                     text = "Verify",
                     onClick = {
-                        viewModel.verifyOtp(userId, otp)
+                        viewModel.verifyOtp(phoneNumber, otp)
                     },
                     enabled = otp.length == 4
                 )
@@ -112,7 +111,7 @@ fun OTPScreen(
                         color = NLTextPrimary
                     )
                     TextButton(
-                        onClick = { viewModel.resendOtp(userId) },
+                        onClick = { viewModel.resendOtp(phoneNumber) },
                         enabled = resendState !is UiState.Loading
                     ) {
                         Text(

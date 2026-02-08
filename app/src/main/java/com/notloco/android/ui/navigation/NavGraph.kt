@@ -21,8 +21,8 @@ sealed class Screen(val route: String) {
     object Launch : Screen("launch")
     object Login : Screen("login")
     object Signup : Screen("signup")
-    object OTP : Screen("otp/{userId}/{phoneNumber}") {
-        fun createRoute(userId: Int, phoneNumber: String) = "otp/$userId/${java.net.URLEncoder.encode(phoneNumber, "UTF-8")}"
+    object OTP : Screen("otp/{phoneNumber}") {
+        fun createRoute(phoneNumber: String) = "otp/${java.net.URLEncoder.encode(phoneNumber, "UTF-8")}"
     }
     object Home : Screen("home")
     object Journal : Screen("journal")
@@ -68,8 +68,8 @@ fun NotLocoNavGraph(
                 onNavigateToSignup = {
                     navController.navigate(Screen.Signup.route)
                 },
-                onNavigateToOTP = { userId, phoneNumber ->
-                    navController.navigate(Screen.OTP.createRoute(userId, phoneNumber))
+                onNavigateToOTP = { phoneNumber ->
+                    navController.navigate(Screen.OTP.createRoute(phoneNumber))
                 },
                 onNavigateBack = {
                     navController.popBackStack()
@@ -84,8 +84,8 @@ fun NotLocoNavGraph(
                         popUpTo(Screen.Signup.route) { inclusive = true }
                     }
                 },
-                onNavigateToOTP = { userId, phoneNumber ->
-                    navController.navigate(Screen.OTP.createRoute(userId, phoneNumber))
+                onNavigateToOTP = { phoneNumber ->
+                    navController.navigate(Screen.OTP.createRoute(phoneNumber))
                 },
                 onNavigateBack = {
                     navController.popBackStack()
@@ -96,18 +96,15 @@ fun NotLocoNavGraph(
         composable(
             route = Screen.OTP.route,
             arguments = listOf(
-                navArgument("userId") { type = NavType.IntType },
                 navArgument("phoneNumber") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val userId = backStackEntry.arguments?.getInt("userId") ?: 0
             val phoneNumber = java.net.URLDecoder.decode(
                 backStackEntry.arguments?.getString("phoneNumber") ?: "", 
                 "UTF-8"
             )
             
             OTPScreen(
-                userId = userId,
                 phoneNumber = phoneNumber,
                 onNavigateToHome = {
                     navController.navigate(Screen.Home.route) {

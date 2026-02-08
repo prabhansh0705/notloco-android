@@ -21,7 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 @Composable
 fun SignupScreen(
     onNavigateToLogin: () -> Unit,
-    onNavigateToOTP: (Int, String) -> Unit,
+    onNavigateToOTP: (String) -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: SignupViewModel = hiltViewModel()
 ) {
@@ -33,8 +33,7 @@ fun SignupScreen(
 
     LaunchedEffect(signupState) {
         if (signupState is UiState.Success) {
-            val userId = (signupState as UiState.Success).data.id
-            onNavigateToOTP(userId, "$countryCode$phoneNumber")
+            onNavigateToOTP("$countryCode$phoneNumber")
             viewModel.resetState()
         }
     }

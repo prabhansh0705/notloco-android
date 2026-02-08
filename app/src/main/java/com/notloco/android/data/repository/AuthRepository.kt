@@ -48,23 +48,22 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun verifyOtp(userId: Int, otp: String): Flow<Resource<VerifyOTPResponse>> = flow {
+    // OTP verification uses the login endpoint with OTP parameter
+    suspend fun verifyOtp(phoneNumber: String, otp: String): Flow<Resource<LoginResponse>> = flow {
         try {
             emit(Resource.Loading())
-            val response = apiService.verifyOtp(VerifyOTPRequest(userId, otp))
+            val response = apiService.login(LoginRequest(phoneNumber, otp.toIntOrNull()))
             if (response.isSuccessful && response.body() != null) {
                 val data = response.body()!!
-                data.data?.let { otpData ->
-                    // Save auth tokens and user info
-                    preferencesManager.saveAuthToken(otpData.accessToken)
-                    preferencesManager.saveRefreshToken(otpData.refreshToken)
-                    preferencesManager.saveUserId(otpData.user.id)
-                    preferencesManager.saveUserName(otpData.user.name ?: "")
-                    preferencesManager.saveUserEmail(otpData.user.email ?: "")
-                    preferencesManager.saveUserPhone(otpData.user.phoneNumber ?: "")
-                    preferencesManager.saveUserType(otpData.user.userType ?: "user")
-                    preferencesManager.setLoggedIn(true)
+                // Save auth token and user info on successful OTP verification
+                data.token?.let { token ->
+                    preferencesManager.saveAuthToken(token.access)
                 }
+                preferencesManager.saveUserId(data.id)
+                preferencesManager.saveUserName(data.name ?: "")
+                preferencesManager.saveUserEmail(data.email ?: "")
+                preferencesManager.saveUserPhone(data.phoneNumber ?: "")
+                preferencesManager.setLoggedIn(true)
                 emit(Resource.Success(data))
             } else {
                 emit(Resource.Error(response.message() ?: "OTP verification failed"))
@@ -74,10 +73,11 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun resendOtp(userId: Int): Flow<Resource<LoginResponse>> = flow {
+    // Resend OTP by calling login without OTP (just phone number)
+    suspend fun resendOtp(phoneNumber: String): Flow<Resource<LoginResponse>> = flow {
         try {
             emit(Resource.Loading())
-            val response = apiService.resendOtp(mapOf("user_id" to userId))
+            val response = apiService.login(LoginRequest(phoneNumber))
             if (response.isSuccessful && response.body() != null) {
                 emit(Resource.Success(response.body()!!))
             } else {
