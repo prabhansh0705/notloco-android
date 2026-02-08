@@ -100,26 +100,36 @@ data class VerifyOTPData(
     val user: UserInfo
 )
 
-// User Info
+// User Info (matches /api/v1/user/detail response)
 data class UserInfo(
     @SerializedName("id")
     val id: Int,
     @SerializedName("name")
     val name: String?,
+    @SerializedName("ranking")
+    val ranking: Int?,
+    @SerializedName("is_verified")
+    val isVerified: Boolean = false,
     @SerializedName("email")
     val email: String?,
     @SerializedName("phone_number")
     val phoneNumber: String?,
-    @SerializedName("country_code")
-    val countryCode: String?,
-    @SerializedName("user_type")
-    val userType: String?,
     @SerializedName("profile_pic")
     val profilePic: String?,
-    @SerializedName("is_verified")
-    val isVerified: Boolean = false,
-    @SerializedName("has_active_subscription")
-    val hasActiveSubscription: Boolean = false
+    @SerializedName("user_created")
+    val userCreated: Boolean = false,
+    @SerializedName("is_member")
+    val isMember: Boolean = false,
+    @SerializedName("is_special_member")
+    val isSpecialMember: Boolean = false,
+    @SerializedName("current_subscription_source")
+    val currentSubscriptionSource: String?,
+    @SerializedName("free_trial_used")
+    val freeTrialUsed: Boolean = false,
+    @SerializedName("allow_journal_access")
+    val allowJournalAccess: Boolean = false,
+    @SerializedName("final_summary")
+    val finalSummary: String?
 )
 
 // Refresh Token Request
