@@ -59,6 +59,11 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyByVtODatWRUPZGuZV07cEqqDFneC5A7EU" />
 
+        <!-- Disable Sentry auto-initialization (no DSN configured) -->
+        <meta-data
+            android:name="io.sentry.auto-init"
+            android:value="false" />
+
     </application>
 
 </manifest>
