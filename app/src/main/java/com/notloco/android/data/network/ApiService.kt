@@ -8,7 +8,7 @@ import retrofit2.http.*
 
 interface ApiService {
 
-    // Authentication
+    // ==================== Authentication ====================
     // Login is used both for initiating login (without OTP) and verifying OTP (with OTP)
     @POST("user/login/")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
@@ -16,90 +16,162 @@ interface ApiService {
     @POST("user/signup/")
     suspend fun signup(@Body request: SignupRequest): Response<SignupResponse>
 
-    @POST("user/refresh-token/")
+    @POST("user/token/refresh/")
     suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<RefreshTokenResponse>
 
-    // User Profile
-    @GET("user/profile")
-    suspend fun getUserProfile(): Response<UserInfo>
+    // ==================== User Profile ====================
+    @GET("user/detail")
+    suspend fun getUserDetail(@Query("id") userId: Int): Response<UserInfo>
 
-    @PUT("user/profile")
-    suspend fun updateUserProfile(@Body user: UserInfo): Response<UserInfo>
+    @GET("user/profile/")
+    suspend fun getUserProfile(@Query("id") userId: Int): Response<UserProfileResponse>
+
+    @POST("user/profile/")
+    suspend fun createUserProfile(
+        @Query("id") userId: Int,
+        @Body profile: UserProfileRequest
+    ): Response<UserProfileResponse>
+
+    @PUT("user/update/")
+    suspend fun updateUser(
+        @Query("id") userId: Int,
+        @Body user: UserUpdateRequest
+    ): Response<UserInfo>
+
+    @DELETE("user/delete/")
+    suspend fun deleteUser(): Response<Unit>
 
     @Multipart
-    @POST("user/upload-profile-pic")
+    @POST("user/upload-profile-pic/")
     suspend fun uploadProfilePic(
-        @Part image: MultipartBody.Part
-    ): Response<AudioUploadResponse>
+        @Part profilePic: MultipartBody.Part
+    ): Response<ProfilePicResponse>
 
-    // Journal
-    @GET("journal/list")
-    suspend fun getJournalList(): Response<JournalListResponse>
+    @GET("user/coach/")
+    suspend fun getUserCoach(@Query("user_id") userId: Int): Response<CoachDetails>
 
-    @GET("journal/{id}")
-    suspend fun getJournalEntry(@Path("id") id: Int): Response<JournalEntry>
+    @POST("user/device/register")
+    suspend fun registerDevice(@Body request: DeviceRegisterRequest): Response<Unit>
 
-    @POST("journal/create")
-    suspend fun createJournal(@Body request: CreateJournalRequest): Response<JournalEntry>
-
-    @DELETE("journal/{id}")
-    suspend fun deleteJournal(@Path("id") id: Int): Response<Unit>
+    // ==================== Journal ====================
+    @GET("journal/journals/")
+    suspend fun getJournalList(@Query("page") page: Int = 1): Response<JournalListResponse>
 
     @Multipart
-    @POST("journal/upload-audio")
+    @POST("journal/upload-audio/")
     suspend fun uploadJournalAudio(
         @Part audio: MultipartBody.Part
-    ): Response<AudioUploadResponse>
+    ): Response<JournalUploadResponse>
 
-    @POST("journal/presigned-url")
-    suspend fun getPresignedUrl(@Body request: PresignedUrlRequest): Response<PresignedUrlResponse>
+    @DELETE("journal/journals/")
+    suspend fun deleteJournal(@Query("id") journalId: Int): Response<Unit>
 
-    @PUT("journal/media")
-    suspend fun uploadJournalMedia(@Body request: JournalMediaRequest): Response<Unit>
+    @PUT("journal/journals/")
+    suspend fun updateJournalTranscription(
+        @Query("id") journalId: Int,
+        @Body request: UpdateTranscriptionRequest
+    ): Response<JournalEntry>
 
-    // Chat
-    @GET("chat/messages/{userId}")
-    suspend fun getChatMessages(@Path("userId") userId: Int): Response<UserChatResponse>
+    @PUT("journal/journals-hide/")
+    suspend fun hideJournal(
+        @Query("id") journalId: Int,
+        @Query("status") status: Boolean
+    ): Response<Unit>
 
-    @POST("chat/send")
-    suspend fun sendMessage(@Body request: SendMessageRequest): Response<ChatMessage>
+    // ==================== Chat ====================
+    @GET("chat/user/get-chats/")
+    suspend fun getUserChats(@Query("is_pinned") isPinned: Boolean? = null): Response<ChatListResponse>
 
-    @PUT("chat/mark-read/{messageId}")
-    suspend fun markMessageAsRead(@Path("messageId") messageId: Int): Response<Unit>
+    @Multipart
+    @POST("chat/user/send-message/")
+    suspend fun userSendMessage(
+        @Part audio: MultipartBody.Part? = null,
+        @Query("reply_to_id") replyToId: Int? = null
+    ): Response<ChatMessage>
 
-    @DELETE("chat/{messageId}")
-    suspend fun deleteMessage(@Path("messageId") messageId: Int): Response<Unit>
+    @PUT("chat/user/send-message/")
+    suspend fun updateUserChat(
+        @Query("id") messageId: Int,
+        @Body request: UpdateChatRequest
+    ): Response<ChatMessage>
 
-    // Coach/Client (for coaches)
-    @GET("coach/clients")
-    suspend fun getClientList(): Response<ClientListResponse>
+    @DELETE("chat/delete-chat/")
+    suspend fun deleteChat(@Query("message_id") messageId: Int): Response<Unit>
 
-    @GET("coach/client/{clientId}/journal")
-    suspend fun getClientJournal(@Path("clientId") clientId: Int): Response<JournalListResponse>
+    @POST("chat/mark-as-read/")
+    suspend fun markChatsAsRead(@Query("message_ids") messageIds: String): Response<Unit>
 
-    @GET("user/coach-details")
-    suspend fun getCoachDetails(): Response<CoachDetails>
+    // ==================== Coach ====================
+    @GET("coach/health-coaches")
+    suspend fun getHealthCoaches(): Response<List<CoachInfo>>
 
-    // Membership/Payments
-    @GET("payments/products")
-    suspend fun getPaymentProducts(): Response<PaymentsProductsResponse>
+    @GET("coach/health-coaches/{coachId}")
+    suspend fun getHealthCoachDetail(@Path("coachId") coachId: Int): Response<CoachInfo>
 
-    @GET("payments/razorpay-plans")
+    @GET("coach/health-coaches/clients")
+    suspend fun getCoachClients(): Response<ClientListResponse>
+
+    @GET("chat/coach/get-chats/")
+    suspend fun getCoachChats(
+        @Query("user_id") userId: Int,
+        @Query("is_pinned") isPinned: Boolean? = null
+    ): Response<ChatListResponse>
+
+    @Multipart
+    @POST("chat/coach/send-message/")
+    suspend fun coachSendMessage(
+        @Query("user_id") userId: Int,
+        @Part audio: MultipartBody.Part? = null,
+        @Query("reply_to_id") replyToId: Int? = null
+    ): Response<ChatMessage>
+
+    @GET("journal/journals-coach/")
+    suspend fun getCoachJournals(
+        @Query("user_id") userId: Int,
+        @Query("page") page: Int = 1
+    ): Response<JournalListResponse>
+
+    // ==================== Payments - Razorpay ====================
+    @GET("payment/razorpay/plans/")
     suspend fun getRazorpayPlans(): Response<RazorpayPlansResponse>
 
-    @POST("subscription/initiate")
-    suspend fun initiateSubscription(@Body request: InitiateSubscriptionRequest): Response<InitiateSubscriptionResponse>
+    @POST("payment/razorpay/inititate-subscription/")
+    suspend fun initiateRazorpaySubscription(@Body request: RazorpaySubscriptionRequest): Response<RazorpaySubscriptionResponse>
 
-    @POST("subscription/setup-intent")
-    suspend fun createSetupIntent(): Response<SetupIntentResponse>
+    @GET("payment/razorpay/subscription/detail/")
+    suspend fun getRazorpaySubscriptionDetail(
+        @Query("subscription_id") subscriptionId: String? = null
+    ): Response<RazorpaySubscriptionDetailResponse>
 
-    @GET("subscription/details")
-    suspend fun getSubscriptionDetails(): Response<SubscriptionDetailsResponse>
+    @DELETE("payment/razorpay/subscription/cancel/")
+    suspend fun cancelRazorpaySubscription(
+        @Query("subscription_id") subscriptionId: String
+    ): Response<RazorpayCancelResponse>
 
-    @POST("subscription/cancel")
-    suspend fun cancelSubscription(@Body request: CancelSubscriptionRequest): Response<Unit>
+    // ==================== Payments - Stripe ====================
+    @GET("payment/products")
+    suspend fun getStripeProducts(): Response<StripeProductsResponse>
 
-    // Notifications
-    @POST("notifications/device-token")
-    suspend fun sendDeviceToken(@Body token: Map<String, String>): Response<Unit>
+    @GET("payment/inititate-subscription/")
+    suspend fun initiateStripeSubscription(
+        @Query("price_id") priceId: String
+    ): Response<StripeSubscriptionResponse>
+
+    @GET("payment/create-setup-intent/")
+    suspend fun createStripeSetupIntent(
+        @Query("price_id") priceId: String
+    ): Response<StripeSetupIntentResponse>
+
+    @GET("payment/subscription/detail/")
+    suspend fun getStripeSubscriptionDetail(): Response<StripeSubscriptionDetailResponse>
+
+    @POST("payment/subscription/cancel/")
+    suspend fun cancelStripeSubscription(): Response<Unit>
+
+    // ==================== Common ====================
+    @POST("common/get-presigned-url/")
+    suspend fun getPresignedUrl(@Body request: PresignedUrlRequest): Response<PresignedUrlResponse>
+
+    @GET("common/get-media")
+    suspend fun getMedia(@Query("name") name: String): Response<MediaResponse>
 }

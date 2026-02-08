@@ -2,121 +2,173 @@ package com.notloco.android.data.models
 
 import com.google.gson.annotations.SerializedName
 
-// Payment Product
-data class PaymentProduct(
+// ==================== Razorpay ====================
+
+// Razorpay Plans Response (matches actual API)
+data class RazorpayPlansResponse(
+    @SerializedName("plans")
+    val plans: List<RazorpayPlan>?,
+    @SerializedName("source")
+    val source: String?
+)
+
+data class RazorpayPlan(
+    @SerializedName("plan_id")
+    val planId: String,
+    @SerializedName("name")
+    val name: String?,
+    @SerializedName("description")
+    val description: String?,
+    @SerializedName("amount")
+    val amount: Int,
+    @SerializedName("currency")
+    val currency: String?,
+    @SerializedName("period")
+    val period: String?,
+    @SerializedName("interval")
+    val interval: Int?,
+    @SerializedName("status")
+    val status: String?,
+    @SerializedName("notes")
+    val notes: List<String>?,
+    @SerializedName("created_at")
+    val createdAt: String?
+)
+
+// Razorpay Subscription Request
+data class RazorpaySubscriptionRequest(
+    @SerializedName("plan_id")
+    val planId: String
+)
+
+// Razorpay Subscription Response
+data class RazorpaySubscriptionResponse(
+    @SerializedName("subscription_id")
+    val subscriptionId: String?,
+    @SerializedName("customer_id")
+    val customerId: String?,
+    @SerializedName("short_url")
+    val shortUrl: String?,
+    @SerializedName("status")
+    val status: String?
+)
+
+// Razorpay Subscription Detail Response
+data class RazorpaySubscriptionDetailResponse(
+    @SerializedName("subscription_id")
+    val subscriptionId: String?,
+    @SerializedName("customer_id")
+    val customerId: String?,
+    @SerializedName("status")
+    val status: String?,
+    @SerializedName("plan_details")
+    val planDetails: RazorpayPlanDetails?,
+    @SerializedName("start_at")
+    val startAt: String?,
+    @SerializedName("end_at")
+    val endAt: String?,
+    @SerializedName("ended_at")
+    val endedAt: String?,
+    @SerializedName("charge_at")
+    val chargeAt: String?,
+    @SerializedName("payment_method")
+    val paymentMethod: String?,
+    @SerializedName("total_count")
+    val totalCount: Int?,
+    @SerializedName("paid_count")
+    val paidCount: Int?,
+    @SerializedName("remaining_count")
+    val remainingCount: Int?
+)
+
+data class RazorpayPlanDetails(
+    @SerializedName("plan_id")
+    val planId: String?,
+    @SerializedName("plan_name")
+    val planName: String?,
+    @SerializedName("amount")
+    val amount: Int?,
+    @SerializedName("currency")
+    val currency: String?,
+    @SerializedName("period")
+    val period: String?,
+    @SerializedName("interval")
+    val interval: Int?
+)
+
+// Razorpay Cancel Response
+data class RazorpayCancelResponse(
+    @SerializedName("subscription_id")
+    val subscriptionId: String?,
+    @SerializedName("status")
+    val status: String?,
+    @SerializedName("message")
+    val message: String?
+)
+
+// ==================== Stripe ====================
+
+// Stripe Products Response
+data class StripeProductsResponse(
+    @SerializedName("data")
+    val data: List<StripeProduct>?,
+    @SerializedName("message")
+    val message: String?
+)
+
+data class StripeProduct(
     @SerializedName("id")
     val id: String,
     @SerializedName("name")
-    val name: String,
+    val name: String?,
     @SerializedName("description")
     val description: String?,
     @SerializedName("price")
-    val price: Double,
+    val price: Double?,
     @SerializedName("currency")
-    val currency: String,
+    val currency: String?,
     @SerializedName("interval")
     val interval: String?,
     @SerializedName("interval_count")
     val intervalCount: Int?
 )
 
-// Payments Products Response
-data class PaymentsProductsResponse(
-    @SerializedName("data")
-    val data: List<PaymentProduct>,
-    @SerializedName("message")
-    val message: String?
-)
-
-// Razorpay Plans Response
-data class RazorpayPlansResponse(
-    @SerializedName("data")
-    val data: List<RazorpayPlan>,
-    @SerializedName("message")
-    val message: String?
-)
-
-data class RazorpayPlan(
-    @SerializedName("id")
-    val id: String,
-    @SerializedName("name")
-    val name: String,
-    @SerializedName("description")
-    val description: String?,
-    @SerializedName("amount")
-    val amount: Int,
-    @SerializedName("currency")
-    val currency: String,
-    @SerializedName("period")
-    val period: String,
-    @SerializedName("interval")
-    val interval: Int
-)
-
-// Initiate Subscription Request
-data class InitiateSubscriptionRequest(
-    @SerializedName("plan_id")
-    val planId: String,
-    @SerializedName("payment_method")
-    val paymentMethod: String
-)
-
-// Initiate Subscription Response
-data class InitiateSubscriptionResponse(
-    @SerializedName("message")
-    val message: String?,
-    @SerializedName("data")
-    val data: SubscriptionData?
-)
-
-data class SubscriptionData(
+// Stripe Subscription Response
+data class StripeSubscriptionResponse(
     @SerializedName("subscription_id")
-    val subscriptionId: String,
+    val subscriptionId: String?,
     @SerializedName("client_secret")
     val clientSecret: String?,
-    @SerializedName("order_id")
-    val orderId: String?
+    @SerializedName("message")
+    val message: String?
 )
 
-// Setup Intent Response (Stripe)
-data class SetupIntentResponse(
+// Stripe Setup Intent Response
+data class StripeSetupIntentResponse(
     @SerializedName("client_secret")
-    val clientSecret: String,
+    val clientSecret: String?,
     @SerializedName("message")
     val message: String?
 )
 
-// Subscription Details Response
-data class SubscriptionDetailsResponse(
-    @SerializedName("data")
-    val data: SubscriptionDetails?,
-    @SerializedName("message")
-    val message: String?
-)
-
-data class SubscriptionDetails(
+// Stripe Subscription Detail Response
+data class StripeSubscriptionDetailResponse(
     @SerializedName("id")
-    val id: String,
+    val id: String?,
     @SerializedName("status")
-    val status: String,
+    val status: String?,
     @SerializedName("plan_name")
-    val planName: String,
+    val planName: String?,
     @SerializedName("amount")
-    val amount: Double,
+    val amount: Double?,
     @SerializedName("currency")
-    val currency: String,
+    val currency: String?,
     @SerializedName("current_period_start")
-    val currentPeriodStart: String,
+    val currentPeriodStart: String?,
     @SerializedName("current_period_end")
-    val currentPeriodEnd: String,
+    val currentPeriodEnd: String?,
     @SerializedName("cancel_at_period_end")
-    val cancelAtPeriodEnd: Boolean
-)
-
-// Cancel Subscription Request
-data class CancelSubscriptionRequest(
-    @SerializedName("subscription_id")
-    val subscriptionId: String
+    val cancelAtPeriodEnd: Boolean?
 )
 
 enum class PaymentMethod(val value: String) {

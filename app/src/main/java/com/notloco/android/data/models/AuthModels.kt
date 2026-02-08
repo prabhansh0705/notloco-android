@@ -141,5 +141,84 @@ data class ErrorResponse(
     @SerializedName("message")
     val message: String?,
     @SerializedName("errors")
-    val errors: Map<String, List<String>>?
+    val errors: Map<String, List<String>>?,
+    @SerializedName("error")
+    val error: ErrorDetail?
+)
+
+data class ErrorDetail(
+    @SerializedName("message")
+    val message: String?
+)
+
+// User Profile Request
+data class UserProfileRequest(
+    @SerializedName("city")
+    val city: String?,
+    @SerializedName("state")
+    val state: String?,
+    @SerializedName("country")
+    val country: String?,
+    @SerializedName("date_of_birth")
+    val dateOfBirth: String?,
+    @SerializedName("tried_therapy_before")
+    val triedTherapyBefore: Boolean?,
+    @SerializedName("gender")
+    val gender: String?,
+    @SerializedName("challenges_they_need_help_with")
+    val challengesTheyNeedHelpWith: String?,
+    @SerializedName("solutions_they_tried")
+    val solutionsTheyTried: String?,
+    @SerializedName("occupation")
+    val occupation: String?,
+    @SerializedName("referred_by")
+    val referredBy: String?
+)
+
+// User Profile Response
+data class UserProfileResponse(
+    @SerializedName("city")
+    val city: String?,
+    @SerializedName("state")
+    val state: String?,
+    @SerializedName("country")
+    val country: String?,
+    @SerializedName("date_of_birth")
+    val dateOfBirth: String?,
+    @SerializedName("tried_therapy_before")
+    val triedTherapyBefore: Boolean?,
+    @SerializedName("gender")
+    val gender: String?,
+    @SerializedName("challenges_they_need_help_with")
+    val challengesTheyNeedHelpWith: String?,
+    @SerializedName("solutions_they_tried")
+    val solutionsTheyTried: String?,
+    @SerializedName("occupation")
+    val occupation: String?,
+    @SerializedName("referred_by")
+    val referredBy: String?
+)
+
+// User Update Request
+data class UserUpdateRequest(
+    @SerializedName("name")
+    val name: String? = null,
+    @SerializedName("email")
+    val email: String? = null,
+    @SerializedName("allow_journal_access")
+    val allowJournalAccess: Boolean? = null
+)
+
+// Profile Pic Response
+data class ProfilePicResponse(
+    @SerializedName("profile_pic")
+    val profilePic: String?
+)
+
+// Device Register Request
+data class DeviceRegisterRequest(
+    @SerializedName("token")
+    val token: String,
+    @SerializedName("device_type")
+    val deviceType: String
 )

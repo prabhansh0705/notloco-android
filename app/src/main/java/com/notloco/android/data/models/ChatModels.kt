@@ -2,52 +2,62 @@ package com.notloco.android.data.models
 
 import com.google.gson.annotations.SerializedName
 
-// Chat Message
+// Chat Message (matches actual API response)
 data class ChatMessage(
     @SerializedName("id")
     val id: Int,
-    @SerializedName("sender_id")
-    val senderId: Int,
-    @SerializedName("receiver_id")
-    val receiverId: Int,
-    @SerializedName("message")
-    val message: String?,
+    @SerializedName("chat_session")
+    val chatSession: Int?,
+    @SerializedName("sender")
+    val sender: Int?,
+    @SerializedName("sender_type")
+    val senderType: String?,
+    @SerializedName("transcription")
+    val transcription: String?,
     @SerializedName("audio_url")
     val audioUrl: String?,
-    @SerializedName("video_url")
-    val videoUrl: String?,
-    @SerializedName("message_type")
-    val messageType: String,
+    @SerializedName("audio_length")
+    val audioLength: String?,
+    @SerializedName("created_at")
+    val createdAt: String?,
+    @SerializedName("modified_at")
+    val modifiedAt: String?,
+    @SerializedName("is_edited")
+    val isEdited: Boolean = false,
+    @SerializedName("is_archived")
+    val isArchived: Boolean = false,
+    @SerializedName("is_vanish")
+    val isVanish: Boolean = false,
     @SerializedName("is_read")
     val isRead: Boolean = false,
-    @SerializedName("created_at")
-    val createdAt: String,
-    @SerializedName("sender_name")
-    val senderName: String?,
-    @SerializedName("sender_profile_pic")
-    val senderProfilePic: String?
+    @SerializedName("coach_profile_pic")
+    val coachProfilePic: String?,
+    @SerializedName("audio")
+    val audio: String?,
+    @SerializedName("expired_at")
+    val expiredAt: String?,
+    @SerializedName("reply_to")
+    val replyTo: Int?,
+    @SerializedName("replies")
+    val replies: List<Int>?
 )
 
-// User Chat Response
-data class UserChatResponse(
-    @SerializedName("data")
-    val data: List<ChatMessage>,
-    @SerializedName("message")
-    val message: String?
+// Chat List Response (matches actual API response)
+data class ChatListResponse(
+    @SerializedName("messages")
+    val messages: List<ChatMessage>?,
+    @SerializedName("page")
+    val page: Int?,
+    @SerializedName("total_pages")
+    val totalPages: Int?
 )
 
-// Send Message Request
-data class SendMessageRequest(
-    @SerializedName("receiver_id")
-    val receiverId: Int,
-    @SerializedName("message")
-    val message: String?,
-    @SerializedName("audio_url")
-    val audioUrl: String?,
-    @SerializedName("video_url")
-    val videoUrl: String?,
-    @SerializedName("message_type")
-    val messageType: String
+// Update Chat Request
+data class UpdateChatRequest(
+    @SerializedName("to_be_pinned")
+    val toBePinned: Boolean? = null,
+    @SerializedName("is_read")
+    val isRead: Boolean? = null
 )
 
 // Client Model (for coaches)
@@ -61,11 +71,11 @@ data class ClientModel(
     @SerializedName("phone_number")
     val phoneNumber: String?,
     @SerializedName("is_active")
-    val isActive: Boolean,
+    val isActive: Boolean = false,
     @SerializedName("profile_pic")
     val profilePic: String?,
     @SerializedName("is_verified")
-    val isVerified: Boolean,
+    val isVerified: Boolean = false,
     @SerializedName("unread_count")
     val unreadCount: Int = 0,
     @SerializedName("is_special_member")
@@ -77,9 +87,41 @@ data class ClientModel(
 // Client List Response
 data class ClientListResponse(
     @SerializedName("data")
-    val data: List<ClientModel>,
+    val data: List<ClientModel>?,
     @SerializedName("message")
     val message: String?
+)
+
+// Coach Info (matches actual API response)
+data class CoachInfo(
+    @SerializedName("id")
+    val id: Int,
+    @SerializedName("email")
+    val email: String?,
+    @SerializedName("name")
+    val name: String?,
+    @SerializedName("phone_number")
+    val phoneNumber: String?,
+    @SerializedName("is_active")
+    val isActive: Boolean = false,
+    @SerializedName("profile_pic")
+    val profilePic: String?,
+    @SerializedName("age")
+    val age: Int?,
+    @SerializedName("profession")
+    val profession: String?,
+    @SerializedName("years_experience")
+    val yearsExperience: Int?,
+    @SerializedName("gender")
+    val gender: String?,
+    @SerializedName("pronoun")
+    val pronoun: String?,
+    @SerializedName("qualifications")
+    val qualifications: String?,
+    @SerializedName("expertise")
+    val expertise: String?,
+    @SerializedName("past_experience")
+    val pastExperience: String?
 )
 
 // Coach Details
@@ -92,10 +134,10 @@ data class CoachDetails(
     val email: String?,
     @SerializedName("profile_pic")
     val profilePic: String?,
-    @SerializedName("bio")
-    val bio: String?,
-    @SerializedName("specialization")
-    val specialization: String?
+    @SerializedName("profession")
+    val profession: String?,
+    @SerializedName("expertise")
+    val expertise: String?
 )
 
 enum class MessageType(val value: String) {

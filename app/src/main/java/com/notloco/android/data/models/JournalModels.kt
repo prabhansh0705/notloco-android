@@ -2,65 +2,52 @@ package com.notloco.android.data.models
 
 import com.google.gson.annotations.SerializedName
 
-// Journal Entry
+// Journal Entry (matches actual API response)
 data class JournalEntry(
     @SerializedName("id")
     val id: Int,
-    @SerializedName("user_id")
-    val userId: Int,
-    @SerializedName("title")
-    val title: String?,
-    @SerializedName("content")
-    val content: String?,
+    @SerializedName("transcription")
+    val transcription: String?,
+    @SerializedName("chatgpt_response")
+    val chatgptResponse: String?,
+    @SerializedName("audio_file_name")
+    val audioFileName: String?,
     @SerializedName("audio_url")
     val audioUrl: String?,
-    @SerializedName("video_url")
-    val videoUrl: String?,
-    @SerializedName("transcript")
-    val transcript: String?,
-    @SerializedName("duration")
-    val duration: Int?,
     @SerializedName("created_at")
-    val createdAt: String,
-    @SerializedName("updated_at")
-    val updatedAt: String
+    val createdAt: String?,
+    @SerializedName("modified_at")
+    val modifiedAt: String?,
+    @SerializedName("audio_length")
+    val audioLength: String?
 )
 
-// Journal List Response
+// Journal List Response (matches actual API response)
 data class JournalListResponse(
-    @SerializedName("data")
-    val data: List<JournalEntry>,
-    @SerializedName("message")
-    val message: String?
+    @SerializedName("user_id")
+    val userId: String?,
+    @SerializedName("transcriptions")
+    val transcriptions: List<JournalEntry>?,
+    @SerializedName("page")
+    val page: String?,
+    @SerializedName("total_pages")
+    val totalPages: Int?
 )
 
-// Create Journal Request
-data class CreateJournalRequest(
-    @SerializedName("title")
-    val title: String?,
-    @SerializedName("content")
-    val content: String?,
-    @SerializedName("audio_url")
-    val audioUrl: String?,
-    @SerializedName("video_url")
-    val videoUrl: String?,
-    @SerializedName("duration")
-    val duration: Int?
+// Journal Upload Response
+data class JournalUploadResponse(
+    @SerializedName("uploaded_audio_file")
+    val uploadedAudioFile: String?,
+    @SerializedName("user_id")
+    val userId: Int?,
+    @SerializedName("audio_length")
+    val audioLength: String?
 )
 
-// Upload Audio Response
-data class AudioUploadResponse(
-    @SerializedName("message")
-    val message: String?,
-    @SerializedName("data")
-    val data: AudioUploadData?
-)
-
-data class AudioUploadData(
-    @SerializedName("audio_url")
-    val audioUrl: String,
-    @SerializedName("transcript")
-    val transcript: String?
+// Update Transcription Request
+data class UpdateTranscriptionRequest(
+    @SerializedName("transcription")
+    val transcription: String
 )
 
 // Presigned URL Request
@@ -74,23 +61,15 @@ data class PresignedUrlRequest(
 // Presigned URL Response
 data class PresignedUrlResponse(
     @SerializedName("presigned_url")
-    val presignedUrl: String,
+    val presignedUrl: String?,
+    @SerializedName("unique_file_name")
+    val uniqueFileName: String?,
     @SerializedName("file_url")
-    val fileUrl: String
+    val fileUrl: String?
 )
 
-// Delete Journal Request
-data class DeleteJournalRequest(
-    @SerializedName("journal_id")
-    val journalId: Int
-)
-
-// Journal Media Request
-data class JournalMediaRequest(
-    @SerializedName("journal_id")
-    val journalId: Int,
-    @SerializedName("media_type")
-    val mediaType: String,
-    @SerializedName("media_url")
-    val mediaUrl: String
+// Media Response
+data class MediaResponse(
+    @SerializedName("data")
+    val data: Any?
 )
