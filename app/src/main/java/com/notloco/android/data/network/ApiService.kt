@@ -1,8 +1,8 @@
 package com.notloco.android.data.network
 
 import com.notloco.android.data.models.*
+import com.google.gson.JsonObject
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -20,7 +20,7 @@ interface ApiService {
     suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<RefreshTokenResponse>
 
     // ==================== User Profile ====================
-    @GET("user/detail")
+    @GET("user/detail/")
     suspend fun getUserDetail(@Query("id") userId: Int): Response<UserInfo>
 
     @GET("user/profile/")
@@ -111,6 +111,12 @@ interface ApiService {
     @GET("coach/health-coaches/clients")
     suspend fun getCoachClients(): Response<ClientListResponse>
 
+    @POST("coach/health-coaches/create/")
+    suspend fun createHealthCoach(@Body request: CoachCreateRequest): Response<CoachInfo>
+
+    @POST("coach/login/")
+    suspend fun coachLogin(@Body request: LoginRequest): Response<JsonObject>
+
     @GET("chat/coach/get-chats/")
     suspend fun getCoachChats(
         @Query("user_id") userId: Int,
@@ -123,6 +129,12 @@ interface ApiService {
         @Query("user_id") userId: Int,
         @Part audio: MultipartBody.Part? = null,
         @Query("reply_to_id") replyToId: Int? = null
+    ): Response<ChatMessage>
+
+    @PUT("chat/coach/send-message/")
+    suspend fun updateCoachChat(
+        @Query("id") messageId: Int,
+        @Body request: UpdateChatRequest
     ): Response<ChatMessage>
 
     @GET("journal/journals-coach/")
@@ -143,10 +155,19 @@ interface ApiService {
         @Query("subscription_id") subscriptionId: String? = null
     ): Response<RazorpaySubscriptionDetailResponse>
 
+    @GET("payment/razorpay/subscription/test/")
+    suspend fun testRazorpaySubscription(): Response<JsonObject>
+
+    @GET("payment/razorpay/webhook/")
+    suspend fun getRazorpayWebhook(): Response<JsonObject>
+
     @DELETE("payment/razorpay/subscription/cancel/")
     suspend fun cancelRazorpaySubscription(
         @Query("subscription_id") subscriptionId: String
     ): Response<RazorpayCancelResponse>
+
+    @POST("payment/razorpay/subscriptions/returning/")
+    suspend fun resumeRazorpaySubscription(@Body request: RazorpayReturningSubscriptionRequest): Response<JsonObject>
 
     // ==================== Payments - Stripe ====================
     @GET("payment/products")
@@ -165,8 +186,14 @@ interface ApiService {
     @GET("payment/subscription/detail/")
     suspend fun getStripeSubscriptionDetail(): Response<StripeSubscriptionDetailResponse>
 
+    @POST("payment/create-checkout-session/")
+    suspend fun createCheckoutSession(@Body request: CheckoutSessionRequest): Response<JsonObject>
+
     @POST("payment/subscription/cancel/")
     suspend fun cancelStripeSubscription(): Response<Unit>
+
+    @POST("user/match-coach/")
+    suspend fun matchCoach(@Body request: MatchCoachRequest): Response<JsonObject>
 
     // ==================== Common ====================
     @POST("common/get-presigned-url/")

@@ -3,6 +3,7 @@ package com.notloco.android.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -16,6 +17,7 @@ import com.notloco.android.ui.screens.auth.OTPScreen
 import com.notloco.android.ui.screens.auth.SignupScreen
 import com.notloco.android.ui.screens.launch.LaunchScreen
 import com.notloco.android.ui.screens.home.HomeScreen
+import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
     object Launch : Screen("launch")
@@ -37,6 +39,7 @@ fun NotLocoNavGraph(
     authRepository: AuthRepository = hiltViewModel<AuthViewModel>().authRepository
 ) {
     val isLoggedIn by authRepository.isLoggedIn().collectAsState(initial = false)
+    val scope = rememberCoroutineScope()
     
     val startDestination = if (isLoggedIn) Screen.Home.route else Screen.Launch.route
 
@@ -118,7 +121,16 @@ fun NotLocoNavGraph(
         }
 
         composable(Screen.Home.route) {
-            HomeScreen()
+            HomeScreen(
+                onLogout = {
+                    scope.launch {
+                        authRepository.logout()
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
+            )
         }
     }
 }

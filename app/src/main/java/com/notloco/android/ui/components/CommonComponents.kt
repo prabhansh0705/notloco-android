@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,7 +42,8 @@ fun NLPrimaryButton(
         Text(
             text = text,
             fontSize = 18.sp,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            fontFamily = GeomFamily
         )
     }
 }
@@ -67,22 +69,29 @@ fun NLTextField(
         placeholder = {
             Text(
                 text = placeholder,
-                color = NLTextSecondary
+                color = NLTextSecondary,
+                fontFamily = GeomFamily
             )
         },
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
         keyboardOptions = keyboardOptions,
+        textStyle = TextStyle(
+            fontFamily = GeomFamily,
+            fontSize = 15.sp
+        ),
         visualTransformation = visualTransformation,
         singleLine = singleLine,
         maxLines = maxLines,
         enabled = enabled,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = NLPrimaryColor,
-            unfocusedBorderColor = NLGray,
+            unfocusedBorderColor = NLLightGray,
             focusedTextColor = NLTextPrimary,
             unfocusedTextColor = NLTextPrimary,
-            cursorColor = NLPrimaryColor
+            cursorColor = NLPrimaryColor,
+            focusedContainerColor = NLWhite,
+            unfocusedContainerColor = NLWhite
         ),
         shape = RoundedCornerShape(12.dp)
     )
@@ -97,7 +106,8 @@ fun NLTitleText(
         text = text,
         modifier = modifier,
         fontSize = 32.sp,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Light,
+        fontFamily = CalendasFamily,
         color = NLTextPrimary
     )
 }
@@ -148,6 +158,7 @@ fun ErrorMessage(
             modifier = Modifier.padding(16.dp),
             color = NLError,
             fontSize = 14.sp,
+            fontFamily = GeomFamily,
             textAlign = TextAlign.Center
         )
     }
@@ -170,15 +181,21 @@ fun PhoneNumberField(
             value = countryCode,
             onValueChange = onCountryCodeChange,
             modifier = Modifier.width(100.dp),
-            placeholder = { Text("+91") },
+            placeholder = { Text("+91", fontFamily = GeomFamily) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            textStyle = TextStyle(
+                fontFamily = GeomFamily,
+                fontSize = 15.sp
+            ),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = NLPrimaryColor,
-                unfocusedBorderColor = NLGray,
+                unfocusedBorderColor = NLLightGray,
                 focusedTextColor = NLTextPrimary,
                 unfocusedTextColor = NLTextPrimary,
-                cursorColor = NLPrimaryColor
+                cursorColor = NLPrimaryColor,
+                focusedContainerColor = NLWhite,
+                unfocusedContainerColor = NLWhite
             ),
             shape = RoundedCornerShape(12.dp)
         )
@@ -188,15 +205,21 @@ fun PhoneNumberField(
             value = phoneNumber,
             onValueChange = onPhoneNumberChange,
             modifier = Modifier.weight(1f),
-            placeholder = { Text("Mobile") },
+            placeholder = { Text("Mobile", fontFamily = GeomFamily) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            textStyle = TextStyle(
+                fontFamily = GeomFamily,
+                fontSize = 15.sp
+            ),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = NLPrimaryColor,
-                unfocusedBorderColor = NLGray,
+                unfocusedBorderColor = NLLightGray,
                 focusedTextColor = NLTextPrimary,
                 unfocusedTextColor = NLTextPrimary,
-                cursorColor = NLPrimaryColor
+                cursorColor = NLPrimaryColor,
+                focusedContainerColor = NLWhite,
+                unfocusedContainerColor = NLWhite
             ),
             shape = RoundedCornerShape(12.dp)
         )
