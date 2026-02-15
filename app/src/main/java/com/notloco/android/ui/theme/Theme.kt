@@ -20,8 +20,12 @@ private val LightColorScheme = lightColorScheme(
     onBackground = NLTextPrimary,
     surface = NLWhite,
     onSurface = NLTextPrimary,
+    surfaceVariant = NLBackgroundColor,
+    onSurfaceVariant = NLTextSecondary,
     error = NLError,
-    onError = NLWhite
+    onError = NLWhite,
+    outline = NLSeparator,
+    outlineVariant = NLLightGray
 )
 
 @Composable

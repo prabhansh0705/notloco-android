@@ -1,5 +1,7 @@
 package com.notloco.android.ui.screens.home
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,11 +10,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -27,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -81,58 +85,89 @@ fun HomeScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Main content area
         when (selectedTab) {
             0 -> ChatScreen()
             1 -> JournalScreen()
         }
 
+        // iOS-style segmented tab bar at bottom
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)
-                .padding(bottom = 6.dp)
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .align(androidx.compose.ui.Alignment.BottomCenter),
-            color = NLWhite
+                .navigationBarsPadding()
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            color = Color.Transparent,
+            shadowElevation = 0.dp
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
-                SegmentedTab(
-                    title = "Therapy",
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    modifier = Modifier.weight(1f)
-                )
-                SegmentedTab(
-                    title = "Journal",
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    modifier = Modifier.weight(1f)
-                )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .shadow(
+                        elevation = 8.dp,
+                        shape = RoundedCornerShape(25.dp),
+                        clip = false,
+                        ambientColor = NLBlack.copy(alpha = 0.08f),
+                        spotColor = NLBlack.copy(alpha = 0.08f)
+                    )
+                    .clip(RoundedCornerShape(25.dp))
+                    .background(NLWhite)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    SegmentedTab(
+                        title = "Therapy",
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        modifier = Modifier.weight(1f)
+                    )
+                    SegmentedTab(
+                        title = "Journal",
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
 
-        IconButton(
-            onClick = { showProfile = true },
+        // Profile avatar button - iOS style top right
+        Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
-                .padding(top = 12.dp, end = 12.dp)
-                .background(NLWhite, androidx.compose.foundation.shape.CircleShape)
+                .padding(top = 10.dp, end = 16.dp)
         ) {
-            AsyncImage(
-                model = profileImageUrl,
-                contentDescription = "Profile",
-                placeholder = androidx.compose.ui.res.painterResource(id = R.drawable.cheetah_profile),
-                error = androidx.compose.ui.res.painterResource(id = R.drawable.cheetah_profile),
+            IconButton(
+                onClick = { showProfile = true },
                 modifier = Modifier
-                    .fillMaxSize()
-                    .clip(androidx.compose.foundation.shape.CircleShape),
-                contentScale = ContentScale.Crop
-            )
+                    .size(40.dp)
+                    .shadow(4.dp, CircleShape, clip = false, ambientColor = NLBlack.copy(alpha = 0.1f))
+                    .clip(CircleShape)
+                    .background(NLWhite)
+            ) {
+                AsyncImage(
+                    model = profileImageUrl,
+                    contentDescription = "Profile",
+                    placeholder = androidx.compose.ui.res.painterResource(id = R.drawable.cheetah_profile),
+                    error = androidx.compose.ui.res.painterResource(id = R.drawable.cheetah_profile),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            }
         }
     }
 }
 
+/**
+ * iOS-style segmented control tab item
+ */
 @Composable
 private fun SegmentedTab(
     title: String,
@@ -140,20 +175,34 @@ private fun SegmentedTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val backgroundColor by animateColorAsState(
+        targetValue = if (selected) NLBlack else NLWhite,
+        animationSpec = tween(250),
+        label = "tabBg"
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (selected) NLWhite else NLBlack,
+        animationSpec = tween(250),
+        label = "tabText"
+    )
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(if (selected) NLBlack else NLWhite)
+            .padding(4.dp)
+            .clip(RoundedCornerShape(21.dp))
+            .background(backgroundColor)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = title,
-            fontSize = 18.sp,
+            fontSize = 15.sp,
             lineHeight = 20.sp,
-            fontWeight = FontWeight.Normal,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             fontFamily = GeomFamily,
-            color = if (selected) NLWhite else Color.Black
+            color = textColor,
+            letterSpacing = (-0.3).sp
         )
     }
 }

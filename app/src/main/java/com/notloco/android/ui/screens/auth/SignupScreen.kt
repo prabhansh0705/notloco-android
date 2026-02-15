@@ -1,6 +1,5 @@
 package com.notloco.android.ui.screens.auth
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,17 +10,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -36,10 +33,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.notloco.android.R
 import com.notloco.android.data.models.UiState
 import com.notloco.android.ui.components.ErrorMessage
 import com.notloco.android.ui.components.LoadingIndicator
+import com.notloco.android.ui.components.NLBackButton
 import com.notloco.android.ui.components.NLPrimaryButton
 import com.notloco.android.ui.components.NLTextField
 import com.notloco.android.ui.components.PhoneNumberField
@@ -50,7 +47,6 @@ import com.notloco.android.ui.theme.NLTextPrimary
 import com.notloco.android.ui.theme.NLTextSecondary
 import com.notloco.android.ui.theme.NLWhite
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun SignupScreen(
     onNavigateToLogin: () -> Unit,
@@ -72,124 +68,130 @@ fun SignupScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { },
-                    navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Image(
-                                painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_left_arrow_ios),
-                                contentDescription = "Back",
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = NLWhite)
-                )
-            },
-            containerColor = NLWhite
-        ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(NLWhite)
+                .statusBarsPadding()
+        ) {
+            // iOS-style navigation bar with back button
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+                    .padding(horizontal = 4.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                NLBackButton(onClick = onNavigateBack)
+            }
+
+            // Title section - iOS large title style
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .background(NLWhite)
+                    .fillMaxWidth()
+                    .padding(horizontal = 28.dp)
+            ) {
+                Text(
+                    text = "Sign Up",
+                    fontSize = 34.sp,
+                    fontFamily = GeomFamily,
+                    fontWeight = FontWeight.Light,
+                    color = NLTextPrimary,
+                    letterSpacing = 0.37.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Create your NotLoco account",
+                    fontSize = 15.sp,
+                    fontFamily = GeomFamily,
+                    color = NLTextSecondary,
+                    letterSpacing = (-0.3).sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Content card - iOS style rounded top card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                colors = CardDefaults.cardColors(containerColor = NLBackgroundColor),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 28.dp)
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp, vertical = 28.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Text(
-                        text = "Sign Up",
-                        fontSize = 34.sp,
-                        fontFamily = GeomFamily,
-                        fontWeight = FontWeight.Light,
-                        color = NLTextPrimary
+                    NLTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        placeholder = "Full Name",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Create your NotLoco account",
-                        fontSize = 14.sp,
-                        fontFamily = GeomFamily,
-                        color = NLTextSecondary
+
+                    NLTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        placeholder = "Email",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                     )
-                }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                    PhoneNumberField(
+                        phoneNumber = phoneNumber,
+                        countryCode = countryCode,
+                        onPhoneNumberChange = { phoneNumber = it },
+                        onCountryCodeChange = { countryCode = it }
+                    )
 
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                    colors = CardDefaults.cardColors(containerColor = NLBackgroundColor)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        NLTextField(
-                            value = name,
-                            onValueChange = { name = it },
-                            placeholder = "Full Name",
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
-                        )
+                    Spacer(modifier = Modifier.height(4.dp))
 
-                        NLTextField(
-                            value = email,
-                            onValueChange = { email = it },
-                            placeholder = "Email",
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
-                        )
-
-                        PhoneNumberField(
-                            phoneNumber = phoneNumber,
-                            countryCode = countryCode,
-                            onPhoneNumberChange = { phoneNumber = it },
-                            onCountryCodeChange = { countryCode = it }
-                        )
-
-                        NLPrimaryButton(
-                            text = "Send Verification Code",
-                            onClick = {
-                                viewModel.signup(
-                                    name = name,
-                                    email = email,
-                                    phoneNumber = "$countryCode$phoneNumber"
-                                )
-                            },
-                            enabled = name.isNotBlank() && email.isNotBlank() && phoneNumber.length == 10
-                        )
-
-                        if (signupState is UiState.Error) {
-                            ErrorMessage(message = (signupState as UiState.Error).message, modifier = Modifier.padding(0.dp))
-                        }
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Already a member? ",
-                                fontFamily = GeomFamily,
-                                color = NLTextPrimary,
-                                fontSize = 14.sp
+                    NLPrimaryButton(
+                        text = "Send Verification Code",
+                        onClick = {
+                            viewModel.signup(
+                                name = name,
+                                email = email,
+                                phoneNumber = "$countryCode$phoneNumber"
                             )
-                            TextButton(onClick = onNavigateToLogin) {
-                                Text(
-                                    text = "Sign In",
-                                    fontWeight = FontWeight.Medium,
-                                    color = NLPrimaryColor,
-                                    fontFamily = GeomFamily
-                                )
-                            }
+                        },
+                        enabled = name.isNotBlank() && email.isNotBlank() && phoneNumber.length == 10
+                    )
+
+                    if (signupState is UiState.Error) {
+                        ErrorMessage(
+                            message = (signupState as UiState.Error).message
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // Bottom link - iOS style
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Already a member?",
+                            fontFamily = GeomFamily,
+                            color = NLTextPrimary,
+                            fontSize = 15.sp,
+                            letterSpacing = (-0.3).sp
+                        )
+                        TextButton(onClick = onNavigateToLogin) {
+                            Text(
+                                text = "Sign In",
+                                fontWeight = FontWeight.SemiBold,
+                                color = NLPrimaryColor,
+                                fontFamily = GeomFamily,
+                                fontSize = 15.sp,
+                                letterSpacing = (-0.3).sp
+                            )
                         }
                     }
                 }
