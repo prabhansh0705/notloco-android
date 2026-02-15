@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,69 +40,83 @@ fun LaunchScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(NLBackgroundColor)
-            .padding(horizontal = 28.dp, vertical = 36.dp)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 28.dp)
     ) {
         Spacer(modifier = Modifier.weight(1f))
 
+        // App illustration - iOS style centered
         Image(
             painter = androidx.compose.ui.res.painterResource(id = R.drawable.launch_new_ios),
             contentDescription = "NotLoco",
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp),
+                .height(200.dp),
             contentScale = ContentScale.Fit
         )
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
+        // App name - iOS large title style
         Text(
             text = "NotLoco",
-            fontSize = 54.sp,
-            lineHeight = 58.sp,
+            fontSize = 52.sp,
+            lineHeight = 56.sp,
             fontFamily = CalendasFamily,
-            color = NLTextPrimary
+            fontWeight = FontWeight.Normal,
+            color = NLTextPrimary,
+            letterSpacing = 0.sp
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
+        // Tagline - iOS subtitle style
         Text(
             text = "The personal therapy and reflection space",
-            fontSize = 16.sp,
+            fontSize = 17.sp,
             lineHeight = 22.sp,
             fontFamily = GeomFamily,
-            color = NLTextSecondary
+            fontWeight = FontWeight.Normal,
+            color = NLTextSecondary,
+            letterSpacing = (-0.4).sp
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
+        // Get Started button - iOS style
         NLPrimaryButton(
             text = "Get Started",
             onClick = onNavigateToSignup
         )
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
+        // Sign In link - iOS style
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Already have an account? ",
+                text = "Already have an account?",
                 color = NLTextPrimary,
                 fontFamily = GeomFamily,
-                fontSize = 14.sp
+                fontSize = 15.sp,
+                letterSpacing = (-0.3).sp
             )
             TextButton(onClick = onNavigateToLogin) {
                 Text(
                     text = "Sign In",
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.SemiBold,
                     fontFamily = GeomFamily,
-                    color = NLPrimaryColor
+                    color = NLPrimaryColor,
+                    fontSize = 15.sp,
+                    letterSpacing = (-0.3).sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
