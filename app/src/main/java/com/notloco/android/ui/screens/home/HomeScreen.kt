@@ -108,9 +108,7 @@ fun HomeScreen(
                     .shadow(
                         elevation = 8.dp,
                         shape = RoundedCornerShape(25.dp),
-                        clip = false,
-                        ambientColor = NLBlack.copy(alpha = 0.08f),
-                        spotColor = NLBlack.copy(alpha = 0.08f)
+                        clip = false
                     )
                     .clip(RoundedCornerShape(25.dp))
                     .background(NLWhite)
@@ -146,7 +144,7 @@ fun HomeScreen(
                 onClick = { showProfile = true },
                 modifier = Modifier
                     .size(40.dp)
-                    .shadow(4.dp, CircleShape, clip = false, ambientColor = NLBlack.copy(alpha = 0.1f))
+                    .shadow(4.dp, CircleShape, clip = false)
                     .clip(CircleShape)
                     .background(NLWhite)
             ) {

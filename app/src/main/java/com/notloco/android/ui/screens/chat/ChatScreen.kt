@@ -235,7 +235,7 @@ fun ChatScreen(
                         modifier = Modifier
                             .scale(pulseScale)
                             .size(68.dp)
-                            .shadow(8.dp, CircleShape, clip = false, ambientColor = NLPrimaryColor.copy(alpha = 0.3f))
+                            .shadow(8.dp, CircleShape, clip = false)
                             .clip(CircleShape)
                             .background(NLPrimaryColor)
                     ) {
@@ -339,8 +339,7 @@ private fun ChatMessageItem(message: ChatMessage) {
                     if (isCoach) Modifier.shadow(
                         1.dp,
                         RoundedCornerShape(18.dp),
-                        clip = false,
-                        ambientColor = NLBlack.copy(alpha = 0.04f)
+                        clip = false
                     ) else Modifier
                 )
                 .padding(horizontal = 14.dp, vertical = 10.dp)

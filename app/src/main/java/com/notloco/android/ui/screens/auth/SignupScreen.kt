@@ -120,59 +120,67 @@ fun SignupScreen(
                 colors = CardDefaults.cardColors(containerColor = NLBackgroundColor),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp, vertical = 28.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    NLTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        placeholder = "Full Name",
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
-                    )
-
-                    NLTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        placeholder = "Email",
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
-                    )
-
-                    PhoneNumberField(
-                        phoneNumber = phoneNumber,
-                        countryCode = countryCode,
-                        onPhoneNumberChange = { phoneNumber = it },
-                        onCountryCodeChange = { countryCode = it }
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    NLPrimaryButton(
-                        text = "Send Verification Code",
-                        onClick = {
-                            viewModel.signup(
-                                name = name,
-                                email = email,
-                                phoneNumber = "$countryCode$phoneNumber"
-                            )
-                        },
-                        enabled = name.isNotBlank() && email.isNotBlank() && phoneNumber.length == 10
-                    )
-
-                    if (signupState is UiState.Error) {
-                        ErrorMessage(
-                            message = (signupState as UiState.Error).message
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // Scrollable form content at top
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 28.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        NLTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            placeholder = "Full Name",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
                         )
+
+                        NLTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            placeholder = "Email",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                        )
+
+                        PhoneNumberField(
+                            phoneNumber = phoneNumber,
+                            countryCode = countryCode,
+                            onPhoneNumberChange = { phoneNumber = it },
+                            onCountryCodeChange = { countryCode = it }
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        NLPrimaryButton(
+                            text = "Send Verification Code",
+                            onClick = {
+                                viewModel.signup(
+                                    name = name,
+                                    email = email,
+                                    phoneNumber = "$countryCode$phoneNumber"
+                                )
+                            },
+                            enabled = name.isNotBlank() && email.isNotBlank() && phoneNumber.length == 10
+                        )
+
+                        if (signupState is UiState.Error) {
+                            ErrorMessage(
+                                message = (signupState as UiState.Error).message
+                            )
+                        }
+
+                        // Bottom spacer to allow scrolling above the fixed bottom link
+                        Spacer(modifier = Modifier.height(60.dp))
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Bottom link - iOS style
+                    // Bottom link pinned to bottom - iOS style
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
+                            .background(NLBackgroundColor)
+                            .padding(bottom = 24.dp, top = 8.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {

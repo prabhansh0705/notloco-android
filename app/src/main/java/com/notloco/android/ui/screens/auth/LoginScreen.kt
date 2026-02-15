@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
@@ -115,39 +113,42 @@ fun LoginScreen(
                 colors = CardDefaults.cardColors(containerColor = NLBackgroundColor),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp, vertical = 28.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    PhoneNumberField(
-                        phoneNumber = phoneNumber,
-                        countryCode = countryCode,
-                        onPhoneNumberChange = { phoneNumber = it },
-                        onCountryCodeChange = { countryCode = it }
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    NLPrimaryButton(
-                        text = "Send Verification Code",
-                        onClick = { viewModel.login("$countryCode$phoneNumber") },
-                        enabled = phoneNumber.length == 10
-                    )
-
-                    if (loginState is UiState.Error) {
-                        ErrorMessage(
-                            message = (loginState as UiState.Error).message
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // Form content at top
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 28.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        PhoneNumberField(
+                            phoneNumber = phoneNumber,
+                            countryCode = countryCode,
+                            onPhoneNumberChange = { phoneNumber = it },
+                            onCountryCodeChange = { countryCode = it }
                         )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        NLPrimaryButton(
+                            text = "Send Verification Code",
+                            onClick = { viewModel.login("$countryCode$phoneNumber") },
+                            enabled = phoneNumber.length == 10
+                        )
+
+                        if (loginState is UiState.Error) {
+                            ErrorMessage(
+                                message = (loginState as UiState.Error).message
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Bottom link - iOS style
+                    // Bottom link pinned to bottom - iOS style
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 24.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {

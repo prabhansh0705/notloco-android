@@ -263,7 +263,7 @@ private fun EmptyJournalState(
                 modifier = Modifier
                     .scale(pulseScale)
                     .size(76.dp)
-                    .shadow(8.dp, CircleShape, clip = false, ambientColor = NLPrimaryColor.copy(alpha = 0.3f))
+                    .shadow(8.dp, CircleShape, clip = false)
                     .clip(CircleShape)
                     .background(NLPrimaryColor)
             ) {

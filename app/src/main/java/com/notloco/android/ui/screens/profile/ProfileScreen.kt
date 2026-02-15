@@ -28,7 +28,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -165,7 +164,7 @@ fun ProfileScreen(
                             icon = Icons.Default.Person,
                             text = profile?.name?.ifBlank { "-" } ?: "-"
                         )
-                        HorizontalDivider(
+                        Divider(
                             modifier = Modifier.padding(start = 44.dp),
                             thickness = 0.5.dp,
                             color = NLSeparator.copy(alpha = 0.3f)
@@ -174,7 +173,7 @@ fun ProfileScreen(
                             icon = Icons.Default.Email,
                             text = profile?.email?.ifBlank { "-" } ?: "-"
                         )
-                        HorizontalDivider(
+                        Divider(
                             modifier = Modifier.padding(start = 44.dp),
                             thickness = 0.5.dp,
                             color = NLSeparator.copy(alpha = 0.3f)
@@ -201,7 +200,7 @@ fun ProfileScreen(
                             iconRes = R.drawable.ic_subscriptions_ios,
                             onClick = onMembershipClick
                         )
-                        HorizontalDivider(
+                        Divider(
                             modifier = Modifier.padding(start = 44.dp),
                             thickness = 0.5.dp,
                             color = NLSeparator.copy(alpha = 0.3f)
@@ -211,7 +210,7 @@ fun ProfileScreen(
                             iconRes = R.drawable.ic_support_ios,
                             onClick = onSupportClick
                         )
-                        HorizontalDivider(
+                        Divider(
                             modifier = Modifier.padding(start = 44.dp),
                             thickness = 0.5.dp,
                             color = NLSeparator.copy(alpha = 0.3f)
@@ -294,7 +293,7 @@ private fun ProfileHeader(profile: UserInfo?) {
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(CircleShape)
-                    .shadow(4.dp, CircleShape, clip = false, ambientColor = NLBlack.copy(alpha = 0.1f)),
+                    .shadow(4.dp, CircleShape, clip = false),
                 contentScale = ContentScale.Crop
             )
             // Edit badge
