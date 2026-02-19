@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.CircularProgressIndicator
@@ -525,7 +524,7 @@ private fun ChatMessageItem(message: ChatMessage) {
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = PlayArrow,
+                                    imageVector = Icons.Rounded.PlayArrow,
                                     contentDescription = "Play",
                                     tint = NLWhite,
                                     modifier = Modifier.size(18.dp)
