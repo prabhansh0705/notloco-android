@@ -30,6 +30,12 @@ data class ChatMessage(
     val isVanish: Boolean = false,
     @SerializedName("is_read")
     val isRead: Boolean = false,
+    @SerializedName("links")
+    val links: String?,
+    @SerializedName("request_video_check_in")
+    val requestVideoCheckIn: Boolean = false,
+    @SerializedName("is_pinned")
+    val isPinned: Boolean = false,
     @SerializedName("coach_profile_pic")
     val coachProfilePic: String?,
     @SerializedName("audio")
@@ -46,10 +52,29 @@ data class ChatMessage(
 data class ChatListResponse(
     @SerializedName("messages")
     val messages: List<ChatMessage>?,
+    @SerializedName("current_coach_detail")
+    val currentCoachDetail: CoachDetails?,
+    @SerializedName("user")
+    val user: UserSubscription?,
     @SerializedName("page")
     val page: Int?,
     @SerializedName("total_pages")
-    val totalPages: Int?
+    val totalPages: Int?,
+    @SerializedName("video_check_in_available")
+    val videoCheckInAvailable: Boolean?,
+    @SerializedName("last_video_check_in")
+    val lastVideoCheckedInDate: String?
+)
+
+data class UserSubscription(
+    @SerializedName("is_member")
+    val isMember: Boolean = false,
+    @SerializedName("is_special_member")
+    val isSpecialMember: Boolean = false,
+    @SerializedName("graduated")
+    val graduated: Boolean = false,
+    @SerializedName("final_summary")
+    val finalSummary: String?
 )
 
 // Update Chat Request
@@ -127,17 +152,47 @@ data class CoachInfo(
 // Coach Details
 data class CoachDetails(
     @SerializedName("id")
-    val id: Int,
+    val id: Int?,
     @SerializedName("name")
     val name: String?,
     @SerializedName("email")
     val email: String?,
+    @SerializedName("phone_number")
+    val phoneNumber: String?,
+    @SerializedName("is_active")
+    val isActive: Boolean = false,
+    @SerializedName("onboarding_complete")
+    val onboardingComplete: Boolean = false,
+    @SerializedName("is_verified")
+    val isVerified: Boolean = false,
     @SerializedName("profile_pic")
     val profilePic: String?,
+    @SerializedName("age")
+    val age: Int?,
     @SerializedName("profession")
     val profession: String?,
+    @SerializedName("years_experience")
+    val yearsExperience: Int?,
+    @SerializedName("gender")
+    val gender: String?,
+    @SerializedName("pronoun")
+    val pronoun: String?,
+    @SerializedName("qualifications")
+    val qualifications: String?,
     @SerializedName("expertise")
-    val expertise: String?
+    val expertise: String?,
+    @SerializedName("audio_url")
+    val audioUrl: String?,
+    @SerializedName("transcription")
+    val transcription: String?,
+    @SerializedName("headline")
+    val headline: String?,
+    @SerializedName("things_I_like")
+    val thingsILike: String?,
+    @SerializedName("welcome_video_thumbnail")
+    val welcomeVideoThumbnail: String?,
+    @SerializedName("welcome_video_url")
+    val welcomeVideoUrl: String?
 )
 
 enum class MessageType(val value: String) {
