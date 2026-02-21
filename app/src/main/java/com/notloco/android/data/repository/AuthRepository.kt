@@ -6,6 +6,10 @@ import com.notloco.android.data.network.ApiService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -144,6 +148,25 @@ class AuthRepository @Inject constructor(
                 emit(Resource.Success(response.body()!!))
             } else {
                 emit(Resource.Error(response.message() ?: "Failed to fetch journals"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.message ?: "An error occurred"))
+        }
+    }
+
+    suspend fun sendChatMessage(
+        audioFile: File,
+        isVanish: Boolean = false
+    ): Flow<Resource<ChatMessage>> = flow {
+        try {
+            emit(Resource.Loading())
+            val requestBody = audioFile.asRequestBody("audio/mp4".toMediaTypeOrNull())
+            val audioPart = MultipartBody.Part.createFormData("audio", audioFile.name, requestBody)
+            val response = apiService.userSendMessage(audio = audioPart, isVanish = isVanish)
+            if (response.isSuccessful && response.body() != null) {
+                emit(Resource.Success(response.body()!!))
+            } else {
+                emit(Resource.Error(response.message() ?: "Failed to send message"))
             }
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "An error occurred"))

@@ -3,6 +3,7 @@ package com.notloco.android.ui.screens.chat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.notloco.android.data.models.ChatListResponse
+import com.notloco.android.data.models.ChatMessage
 import com.notloco.android.data.models.CoachDetails
 import com.notloco.android.data.models.Resource
 import com.notloco.android.data.models.UiState
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
@@ -93,6 +95,31 @@ class ChatViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private val _sendState = MutableStateFlow<UiState<ChatMessage>>(UiState.Idle)
+    val sendState: StateFlow<UiState<ChatMessage>> = _sendState.asStateFlow()
+
+    fun sendMessage(audioFile: File, isVanish: Boolean = false) {
+        viewModelScope.launch {
+            authRepository.sendChatMessage(audioFile, isVanish).collect { resource ->
+                when (resource) {
+                    is Resource.Loading -> _sendState.value = UiState.Loading
+                    is Resource.Success -> {
+                        _sendState.value = UiState.Success(resource.data!!)
+                        fetchChats()
+                        fetchPinnedChats()
+                    }
+                    is Resource.Error -> {
+                        _sendState.value = UiState.Error(resource.message ?: "Failed to send")
+                    }
+                }
+            }
+        }
+    }
+
+    fun resetSendState() {
+        _sendState.value = UiState.Idle
     }
 
     fun fetchCoachDetails() {

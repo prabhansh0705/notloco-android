@@ -89,7 +89,8 @@ interface ApiService {
     @POST("chat/user/send-message/")
     suspend fun userSendMessage(
         @Part audio: MultipartBody.Part? = null,
-        @Query("reply_to_id") replyToId: Int? = null
+        @Query("reply_to_id") replyToId: Int? = null,
+        @Query("is_vanish") isVanish: Boolean = false
     ): Response<ChatMessage>
 
     @PUT("chat/user/send-message/")

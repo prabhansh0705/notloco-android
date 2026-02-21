@@ -84,10 +84,25 @@ import com.notloco.android.data.models.CoachDetails
 import com.notloco.android.data.models.UiState
 import com.notloco.android.ui.theme.*
 import com.notloco.android.utils.AudioPlayerManager
+import com.notloco.android.utils.AudioRecorder
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.pm.PackageManager
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.platform.LocalContext
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -112,9 +127,11 @@ fun ChatScreen(
         messages.filter { it.isPinned }
     }
     val coach = (coachState as? UiState.Success)?.data
+    val sendState by viewModel.sendState.collectAsState()
     var showingPinnedMessages by rememberSaveable { mutableStateOf(false) }
     var selectedMessageForActions by rememberSaveable { mutableStateOf<ChatMessage?>(null) }
     var selectedMessageForDetail by remember { mutableStateOf<ChatMessage?>(null) }
+    var showRecordingScreen by remember { mutableStateOf(false) }
     val displayedMessages = if (showingPinnedMessages) pinnedMessages else messages
     val grouped = displayedMessages.groupBy { sectionLabel(it.createdAt) }
     val listState = rememberLazyListState()
@@ -230,7 +247,7 @@ fun ChatScreen(
         }
 
         // Chat area with rounded top corners - iOS style
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
@@ -238,14 +255,13 @@ fun ChatScreen(
         ) {
             LazyColumn(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxSize(),
                 state = listState,
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     end = 16.dp,
                     top = 20.dp,
-                    bottom = 140.dp
+                    bottom = 160.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -345,71 +361,49 @@ fun ChatScreen(
                 }
             }
 
-            // iOS-style mic button at bottom (Hold to record)
-            Box(
+            // Floating mic button
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .align(Alignment.BottomEnd)
                     .padding(end = 16.dp, bottom = 80.dp),
-                contentAlignment = Alignment.BottomEnd
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(horizontalAlignment = Alignment.End) {
-                    val haptic = LocalHapticFeedback.current
+                Box(
+                    modifier = Modifier
+                        .size(108.dp)
+                        .clickable { showRecordingScreen = true },
+                    contentAlignment = Alignment.Center
+                ) {
                     Box(
                         modifier = Modifier
                             .size(108.dp)
-                            .combinedClickable(
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    // Tap feedback; primary action is hold to record
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    // TODO: start recording - wire to ViewModel
-                                },
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
+                            .clip(CircleShape)
+                            .background(NLPrimaryColor.copy(alpha = 0.08f))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .scale(pulseScale)
+                            .size(68.dp)
+                            .shadow(8.dp, CircleShape, clip = false)
+                            .clip(CircleShape)
+                            .background(
+                                brush = Brush.linearGradient(
+                                    listOf(
+                                        Color(0xFFE1D45C),
+                                        NLPrimaryColor,
+                                        Color(0xFF67B1C0)
+                                    )
+                                ),
+                                shape = CircleShape
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(108.dp)
-                                .clip(CircleShape)
-                                .background(NLPrimaryColor.copy(alpha = 0.08f))
+                        Image(
+                            painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_mic_ios),
+                            contentDescription = "Record",
+                            modifier = Modifier.size(30.dp)
                         )
-                        Box(
-                            modifier = Modifier
-                                .scale(pulseScale)
-                                .size(68.dp)
-                                .shadow(8.dp, CircleShape, clip = false)
-                                .clip(CircleShape)
-                                .background(
-                                    brush = Brush.linearGradient(
-                                        listOf(
-                                            Color(0xFFE1D45C),
-                                            NLPrimaryColor,
-                                            Color(0xFF67B1C0)
-                                        )
-                                    ),
-                                    shape = CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_mic_ios),
-                                contentDescription = "Hold to record",
-                                modifier = Modifier.size(30.dp)
-                            )
-                        }
                     }
-
-                    Text(
-                        text = "Hold to record",
-                        fontSize = 12.sp,
-                        color = NLTextSecondary,
-                        fontFamily = GeomFamily,
-                        letterSpacing = (-0.2).sp
-                    )
                 }
             }
 
@@ -437,6 +431,23 @@ fun ChatScreen(
                 )
             }
         }
+    }
+
+    if (showRecordingScreen) {
+        ChatRecordingScreen(
+            coach = coach,
+            sendState = sendState,
+            onSend = { file, isVanish ->
+                viewModel.sendMessage(file, isVanish)
+            },
+            onSent = {
+                viewModel.resetSendState()
+                showRecordingScreen = false
+            },
+            onBack = {
+                showRecordingScreen = false
+            }
+        )
     }
 }
 
@@ -1056,6 +1067,434 @@ private fun ChatDetailSheet(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChatRecordingScreen(
+    coach: CoachDetails?,
+    sendState: UiState<ChatMessage>,
+    onSend: (File, Boolean) -> Unit,
+    onSent: () -> Unit,
+    onBack: () -> Unit
+) {
+    val context = LocalContext.current
+    val recorder = remember { AudioRecorder(context) }
+    var isRecording by remember { mutableStateOf(false) }
+    var recordingDone by remember { mutableStateOf(false) }
+    var recordedFile by remember { mutableStateOf<File?>(null) }
+    var elapsedSeconds by remember { mutableStateOf(0) }
+    var isVanish by remember { mutableStateOf(false) }
+    var additionalUrl by remember { mutableStateOf("") }
+    val maxSeconds = 180
+
+    val subtitle = coach?.headline
+        ?.takeIf { it.isNotBlank() }
+        ?: buildCoachSubtitle(coach)
+
+    LaunchedEffect(sendState) {
+        if (sendState is UiState.Success) onSent()
+    }
+
+    LaunchedEffect(isRecording) {
+        if (isRecording) {
+            while (isRecording) {
+                kotlinx.coroutines.delay(1000)
+                elapsedSeconds++
+                if (elapsedSeconds >= maxSeconds) {
+                    recordedFile = recorder.stopRecording()
+                    isRecording = false
+                    recordingDone = true
+                }
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (recorder.isRecording()) recorder.cancelRecording()
+            AudioPlayerManager.stop()
+        }
+    }
+
+    val waveTransition = rememberInfiniteTransition(label = "rec_wave")
+    val wavePhase by waveTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rec_wave_phase"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(NLWhite)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Back button
+            IconButton(
+                onClick = {
+                    if (recorder.isRecording()) recorder.cancelRecording()
+                    AudioPlayerManager.stop()
+                    onBack()
+                },
+                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+            ) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = NLBlack)
+            }
+
+            // Coach header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(NLBackgroundColor)
+                ) {
+                    AsyncImage(
+                        model = coach?.profilePic,
+                        contentDescription = "Coach",
+                        placeholder = androidx.compose.ui.res.painterResource(id = R.drawable.dr_lily),
+                        error = androidx.compose.ui.res.painterResource(id = R.drawable.dr_lily),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(6.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                Column {
+                    Text(
+                        text = coach?.name?.ifBlank { "Your Therapist" } ?: "Your Therapist",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        fontFamily = GeomFamily,
+                        color = NLTextPrimary
+                    )
+                    Text(
+                        text = subtitle,
+                        fontSize = 12.sp,
+                        fontFamily = GeomFamily,
+                        color = NLTextSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Gradient divider
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(2.dp)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(Color(0xFFE1D45C), NLPrimaryColor, Color(0xFF67B1C0))
+                        )
+                    )
+            )
+
+            // Main content
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!recordingDone) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        if (isRecording) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 40.dp)
+                                    .height(40.dp),
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                repeat(30) { i ->
+                                    val h = (10 + 20 * kotlin.math.sin((i + wavePhase * 30) * 0.5)).dp
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(h)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(Color(0xFFE5C76B))
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
+
+                        // Mic button with concentric rings
+                        Box(
+                            modifier = Modifier.size(180.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(180.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFF5F0E0).copy(alpha = 0.5f))
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(130.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFF5F0E0))
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(90.dp)
+                                    .shadow(4.dp, CircleShape)
+                                    .clip(CircleShape)
+                                    .background(NLWhite)
+                                    .clickable {
+                                        val hasPerm = ContextCompat.checkSelfPermission(
+                                            context, Manifest.permission.RECORD_AUDIO
+                                        ) == PackageManager.PERMISSION_GRANTED
+                                        if (!hasPerm) return@clickable
+
+                                        if (!isRecording) {
+                                            elapsedSeconds = 0
+                                            recorder.startRecording()
+                                            isRecording = true
+                                        } else {
+                                            recordedFile = recorder.stopRecording()
+                                            isRecording = false
+                                            recordingDone = true
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isRecording) {
+                                    Text(
+                                        text = String.format(
+                                            "%02d:%02d",
+                                            elapsedSeconds / 60,
+                                            elapsedSeconds % 60
+                                        ),
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontFamily = GeomFamily,
+                                        color = NLPrimaryColor
+                                    )
+                                } else {
+                                    Image(
+                                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_mic_ios),
+                                        contentDescription = "Record",
+                                        modifier = Modifier.size(36.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        Text(
+                            text = if (isRecording) "Recording has started.\nTap the button to stop recording."
+                            else "Tap the button to start recording.",
+                            color = Color(0xFFD9BA6B),
+                            fontSize = 15.sp,
+                            fontFamily = GeomFamily,
+                            lineHeight = 22.sp,
+                            modifier = Modifier.padding(horizontal = 32.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                } else {
+                    val playingUrl by AudioPlayerManager.playingUrl.collectAsState()
+                    val isPlayingPreview = recordedFile != null &&
+                            playingUrl == recordedFile?.absolutePath
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp)
+                    ) {
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // Audio preview card
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(NLBackgroundColor)
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        Brush.linearGradient(
+                                            listOf(Color(0xFF67B1C0), NLPrimaryColor)
+                                        )
+                                    )
+                                    .clickable {
+                                        recordedFile?.let {
+                                            AudioPlayerManager.playOrToggle(context, it.absolutePath)
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlayingPreview) Icons.Filled.Pause
+                                    else Icons.Filled.PlayArrow,
+                                    contentDescription = if (isPlayingPreview) "Pause" else "Play",
+                                    tint = NLWhite,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            WaveformPlaceholder(
+                                modifier = Modifier.weight(1f),
+                                isUserMessage = true
+                            )
+                            IconButton(
+                                onClick = {
+                                    AudioPlayerManager.stop()
+                                    recordedFile?.delete()
+                                    recordedFile = null
+                                    recordingDone = false
+                                    elapsedSeconds = 0
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.Delete, "Delete",
+                                    tint = NLError,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Add URL field
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(NLBackgroundColor)
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text("🔗", fontSize = 14.sp)
+                            BasicTextField(
+                                value = additionalUrl,
+                                onValueChange = { additionalUrl = it },
+                                singleLine = true,
+                                textStyle = TextStyle(
+                                    fontSize = 14.sp,
+                                    fontFamily = GeomFamily,
+                                    color = NLPrimaryColor
+                                ),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                                modifier = Modifier.weight(1f),
+                                decorationBox = { innerField ->
+                                    if (additionalUrl.isEmpty()) {
+                                        Text(
+                                            "Add any URL",
+                                            color = NLPrimaryColor.copy(alpha = 0.5f),
+                                            fontSize = 14.sp,
+                                            fontFamily = GeomFamily
+                                        )
+                                    }
+                                    innerField()
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // Send button
+                        val isSending = sendState is UiState.Loading
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable(enabled = !isSending) {
+                                    recordedFile?.let { file -> onSend(file, isVanish) }
+                                }
+                                .padding(horizontal = 24.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (isSending) {
+                                CircularProgressIndicator(
+                                    color = NLBlack,
+                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            } else {
+                                Text(
+                                    "Send",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = GeomFamily,
+                                    color = NLBlack
+                                )
+                                Icon(
+                                    Icons.Filled.Send, "Send",
+                                    tint = NLBlack,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+
+                        if (sendState is UiState.Error) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = (sendState as UiState.Error).message,
+                                color = NLError,
+                                fontSize = 13.sp,
+                                fontFamily = GeomFamily
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                }
+            }
+
+            // Vanish toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                androidx.compose.material3.Checkbox(
+                    checked = isVanish,
+                    onCheckedChange = { isVanish = it }
+                )
+                Text("Vanish after 24 hours", fontSize = 16.sp, fontFamily = GeomFamily, color = NLBlack)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("⏱", fontSize = 16.sp)
             }
         }
     }
