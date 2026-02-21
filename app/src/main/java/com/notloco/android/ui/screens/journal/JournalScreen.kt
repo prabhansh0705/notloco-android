@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,8 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -64,8 +65,6 @@ import com.notloco.android.R
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.snapshotFlow
 import com.notloco.android.data.models.JournalEntry
 import com.notloco.android.data.models.UiState
 import com.notloco.android.ui.theme.*
@@ -183,114 +182,101 @@ fun JournalScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Content
-            when (val state = journalState) {
-                UiState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = NLPrimaryColor,
-                            strokeWidth = 3.dp,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
-
-                is UiState.Error -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = state.message,
-                            color = NLError,
-                            fontSize = 14.sp,
-                            fontFamily = GeomFamily
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(onClick = { viewModel.fetchJournals() }) {
-                            Text(
-                                "Retry",
+            // Content area fills remaining space in the Column
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                when (val state = journalState) {
+                    UiState.Loading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
                                 color = NLPrimaryColor,
-                                fontFamily = GeomFamily,
-                                fontWeight = FontWeight.SemiBold
+                                strokeWidth = 3.dp,
+                                modifier = Modifier.size(32.dp)
                             )
                         }
                     }
-                }
 
-                is UiState.Success -> {
-                    if (journals.isEmpty()) {
-                        EmptyJournalState(
-                            pulseScale = pulseScale,
-                            onMicClick = {
-                                if (permissionsState.allPermissionsGranted) {
-                                    showRecordingDialog = true
-                                } else {
-                                    permissionsState.launchMultiplePermissionRequest()
-                                }
-                            }
-                        )
-                    } else {
-                        val listState = rememberLazyListState()
-
-                        val shouldLoadMore = remember {
-                            derivedStateOf {
-                                val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                                val totalItems = listState.layoutInfo.totalItemsCount
-                                lastVisibleItem >= totalItems - 3
+                    is UiState.Error -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = state.message,
+                                color = NLError,
+                                fontSize = 14.sp,
+                                fontFamily = GeomFamily
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(onClick = { viewModel.fetchJournals() }) {
+                                Text(
+                                    "Retry",
+                                    color = NLPrimaryColor,
+                                    fontFamily = GeomFamily,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
                         }
+                    }
 
-                        LaunchedEffect(Unit) {
-                            snapshotFlow { shouldLoadMore.value }
-                                .collect { shouldLoad ->
-                                    if (shouldLoad && viewModel.canLoadMore && !isLoadingMore) {
-                                        viewModel.loadNextPage()
+                    is UiState.Success -> {
+                        if (journals.isEmpty()) {
+                            EmptyJournalState(
+                                pulseScale = pulseScale,
+                                onMicClick = {
+                                    if (permissionsState.allPermissionsGranted) {
+                                        showRecordingDialog = true
+                                    } else {
+                                        permissionsState.launchMultiplePermissionRequest()
                                     }
                                 }
-                        }
-
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 12.dp,
-                                bottom = 140.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(0.dp)
-                        ) {
-                            items(journals, key = { it.id }) { entry ->
-                                JournalTimelineItem(entry, isLast = entry == journals.last() && !viewModel.canLoadMore)
-                            }
-                            if (isLoadingMore) {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 16.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(
-                                            color = NLPrimaryColor,
-                                            strokeWidth = 2.dp,
-                                            modifier = Modifier.size(24.dp)
-                                        )
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    top = 12.dp,
+                                    bottom = 140.dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(0.dp)
+                            ) {
+                                itemsIndexed(journals, key = { _, entry -> entry.id }) { index, entry ->
+                                    if (index == journals.lastIndex && viewModel.canLoadMore) {
+                                        LaunchedEffect(journals.size) {
+                                            viewModel.loadNextPage()
+                                        }
+                                    }
+                                    JournalTimelineItem(entry, isLast = index == journals.lastIndex && !viewModel.canLoadMore)
+                                }
+                                if (isLoadingMore) {
+                                    item(key = "loading_more") {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(
+                                                color = NLPrimaryColor,
+                                                strokeWidth = 2.dp,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                else -> Unit
+                    else -> Unit
+                }
             }
         }
 
@@ -449,13 +435,15 @@ private fun JournalTimelineItem(entry: JournalEntry, isLast: Boolean = false) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 0.dp),
+            .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.Top
     ) {
         // Timeline dot + line
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(24.dp)
+            modifier = Modifier
+                .width(24.dp)
+                .fillMaxHeight()
         ) {
             Spacer(modifier = Modifier.height(8.dp))
             Box(
