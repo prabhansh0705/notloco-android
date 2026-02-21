@@ -91,7 +91,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -166,7 +166,7 @@ fun ChatScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 14.dp),
+                .padding(start = 20.dp, end = 60.dp, top = 14.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -1089,6 +1089,7 @@ private fun ChatRecordingScreen(
     var isVanish by remember { mutableStateOf(false) }
     var additionalUrl by remember { mutableStateOf("") }
     val maxSeconds = 180
+    val progress = elapsedSeconds.toFloat() / maxSeconds.toFloat()
 
     val subtitle = coach?.headline
         ?.takeIf { it.isNotBlank() }
@@ -1130,12 +1131,13 @@ private fun ChatRecordingScreen(
         label = "rec_wave_phase"
     )
 
+    val tealArc = Color(0xFF67B1C0)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(NLWhite)
             .statusBarsPadding()
-            .navigationBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Back button
@@ -1154,8 +1156,7 @@ private fun ChatRecordingScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = 16.dp),
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -1221,50 +1222,71 @@ private fun ChatRecordingScreen(
                     ) {
                         Spacer(modifier = Modifier.weight(1f))
 
-                        if (isRecording) {
-                            Row(
+                        // Waveform + mic button combined (iOS layout)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            // Waveform bars behind the mic button
+                            if (isRecording) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 24.dp)
+                                        .height(60.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    repeat(40) { i ->
+                                        val h = (8 + 30 * kotlin.math.sin((i + wavePhase * 40) * 0.4)).dp
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(h)
+                                                .clip(RoundedCornerShape(2.dp))
+                                                .background(Color(0xFFE5C76B))
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Concentric rings
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 40.dp)
-                                    .height(40.dp),
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                repeat(30) { i ->
-                                    val h = (10 + 20 * kotlin.math.sin((i + wavePhase * 30) * 0.5)).dp
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(h)
-                                            .clip(RoundedCornerShape(2.dp))
-                                            .background(Color(0xFFE5C76B))
+                                    .size(200.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFF5F0E0).copy(alpha = 0.4f))
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(150.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFF5F0E0).copy(alpha = 0.7f))
+                            )
+
+                            // Blue progress arc (time remaining indicator)
+                            if (isRecording) {
+                                Canvas(modifier = Modifier.size(110.dp)) {
+                                    drawArc(
+                                        color = tealArc,
+                                        startAngle = -90f,
+                                        sweepAngle = 360f * progress,
+                                        useCenter = false,
+                                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                            width = 4.dp.toPx(),
+                                            cap = androidx.compose.ui.graphics.StrokeCap.Round
+                                        )
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.height(24.dp))
-                        }
 
-                        // Mic button with concentric rings
-                        Box(
-                            modifier = Modifier.size(180.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
+                            // Inner white button with border
                             Box(
                                 modifier = Modifier
-                                    .size(180.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFF5F0E0).copy(alpha = 0.5f))
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .size(130.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFF5F0E0))
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .size(90.dp)
-                                    .shadow(4.dp, CircleShape)
+                                    .size(100.dp)
+                                    .shadow(6.dp, CircleShape)
                                     .clip(CircleShape)
                                     .background(NLWhite)
                                     .clickable {
@@ -1272,7 +1294,6 @@ private fun ChatRecordingScreen(
                                             context, Manifest.permission.RECORD_AUDIO
                                         ) == PackageManager.PERMISSION_GRANTED
                                         if (!hasPerm) return@clickable
-
                                         if (!isRecording) {
                                             elapsedSeconds = 0
                                             recorder.startRecording()
@@ -1292,17 +1313,34 @@ private fun ChatRecordingScreen(
                                             elapsedSeconds / 60,
                                             elapsedSeconds % 60
                                         ),
-                                        fontSize = 20.sp,
+                                        fontSize = 22.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         fontFamily = GeomFamily,
                                         color = NLPrimaryColor
                                     )
                                 } else {
-                                    Image(
-                                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_mic_ios),
-                                        contentDescription = "Record",
-                                        modifier = Modifier.size(36.dp)
-                                    )
+                                    // Gradient mic icon matching iOS
+                                    Box(
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                Brush.linearGradient(
+                                                    listOf(
+                                                        Color(0xFFE1D45C),
+                                                        NLPrimaryColor,
+                                                        Color(0xFF67B1C0)
+                                                    )
+                                                )
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Image(
+                                            painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_mic_ios),
+                                            contentDescription = "Record",
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1403,7 +1441,7 @@ private fun ChatRecordingScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text("🔗", fontSize = 14.sp)
+                            Text("\uD83D\uDD17", fontSize = 14.sp)
                             BasicTextField(
                                 value = additionalUrl,
                                 onValueChange = { additionalUrl = it },
@@ -1484,7 +1522,7 @@ private fun ChatRecordingScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
+                    .padding(bottom = 80.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1494,7 +1532,7 @@ private fun ChatRecordingScreen(
                 )
                 Text("Vanish after 24 hours", fontSize = 16.sp, fontFamily = GeomFamily, color = NLBlack)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("⏱", fontSize = 16.sp)
+                Text("\u23F1", fontSize = 16.sp)
             }
         }
     }
