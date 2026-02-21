@@ -129,7 +129,7 @@ fun ChatScreen(
     val coach = (coachState as? UiState.Success)?.data
     val sendState by viewModel.sendState.collectAsState()
     var showingPinnedMessages by rememberSaveable { mutableStateOf(false) }
-    var selectedMessageForActions by rememberSaveable { mutableStateOf<ChatMessage?>(null) }
+    var selectedMessageForActions by remember { mutableStateOf<ChatMessage?>(null) }
     var selectedMessageForDetail by remember { mutableStateOf<ChatMessage?>(null) }
     var showRecordingScreen by remember { mutableStateOf(false) }
     val displayedMessages = if (showingPinnedMessages) pinnedMessages else messages
@@ -740,9 +740,7 @@ private fun ChatPlayButton(
                 .clip(CircleShape)
                 .background(
                     Brush.linearGradient(
-                        listOf(primary, cream),
-                        start = androidx.compose.ui.geometry.Offset(0f, Float.MAX_VALUE),
-                        end = androidx.compose.ui.geometry.Offset(Float.MAX_VALUE, 0f)
+                        listOf(primary, cream)
                     )
                 ),
             contentAlignment = Alignment.Center
