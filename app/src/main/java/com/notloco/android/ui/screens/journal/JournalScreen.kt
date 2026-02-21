@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
@@ -76,7 +77,9 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import androidx.compose.runtime.LaunchedEffect
 import com.notloco.android.data.models.JournalEntry
 import com.notloco.android.data.models.UiState
+import androidx.compose.ui.platform.LocalContext
 import com.notloco.android.ui.theme.*
+import com.notloco.android.utils.AudioPlayerManager
 import com.notloco.android.utils.PermissionUtils
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -87,11 +90,13 @@ import java.util.TimeZone
 fun JournalScreen(
     viewModel: JournalViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     var showRecordingDialog by remember { mutableStateOf(false) }
     var selectedEntry by remember { mutableStateOf<JournalEntry?>(null) }
     val journalState by viewModel.journalState.collectAsState()
     val isLoadingMore by viewModel.isLoadingMore.collectAsState()
     val journals = (journalState as? UiState.Success)?.data.orEmpty()
+    val playingUrl by AudioPlayerManager.playingUrl.collectAsState()
 
     val permissionsState = rememberMultiplePermissionsState(
         permissions = PermissionUtils.AUDIO_PERMISSIONS.toList()
@@ -266,7 +271,13 @@ fun JournalScreen(
                                     JournalTimelineItem(
                                         entry = entry,
                                         isLast = index == journals.lastIndex && !viewModel.canLoadMore,
-                                        onClick = { selectedEntry = entry }
+                                        isPlaying = playingUrl == entry.audioUrl,
+                                        onClick = { selectedEntry = entry },
+                                        onPlayClick = {
+                                            entry.audioUrl?.let { url ->
+                                                AudioPlayerManager.playOrToggle(context, url)
+                                            }
+                                        }
                                     )
                                 }
                                 if (isLoadingMore) {
@@ -450,7 +461,13 @@ private fun EmptyJournalState(
  * - Transcription text
  */
 @Composable
-private fun JournalTimelineItem(entry: JournalEntry, isLast: Boolean = false, onClick: () -> Unit = {}) {
+private fun JournalTimelineItem(
+    entry: JournalEntry,
+    isLast: Boolean = false,
+    isPlaying: Boolean = false,
+    onClick: () -> Unit = {},
+    onPlayClick: () -> Unit = {}
+) {
     val mood = entry.chatgptResponse?.takeIf { it.isNotBlank() }
 
     Row(
@@ -589,12 +606,13 @@ private fun JournalTimelineItem(entry: JournalEntry, isLast: Boolean = false, on
                                     Brush.linearGradient(
                                         listOf(Color(0xFF67B1C0), NLPrimaryColor)
                                     )
-                                ),
+                                )
+                                .clickable { onPlayClick() },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = "Play",
+                                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                contentDescription = if (isPlaying) "Pause" else "Play",
                                 tint = NLWhite,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -779,8 +797,11 @@ private fun JournalDetailSheet(
     entry: JournalEntry,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val mood = entry.chatgptResponse?.takeIf { it.isNotBlank() }
+    val currentPlayingUrl by AudioPlayerManager.playingUrl.collectAsState()
+    val isPlaying = currentPlayingUrl == entry.audioUrl
     var isEditing by remember { mutableStateOf(false) }
     var editedTranscription by remember(entry.id) {
         mutableStateOf(entry.transcription ?: "")
@@ -900,12 +921,17 @@ private fun JournalDetailSheet(
                                             Brush.linearGradient(
                                                 listOf(Color(0xFF67B1C0), NLPrimaryColor)
                                             )
-                                        ),
+                                        )
+                                        .clickable {
+                                            entry.audioUrl?.let { url ->
+                                                AudioPlayerManager.playOrToggle(context, url)
+                                            }
+                                        },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Filled.PlayArrow,
-                                        contentDescription = "Play",
+                                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                        contentDescription = if (isPlaying) "Pause" else "Play",
                                         tint = NLWhite,
                                         modifier = Modifier.size(20.dp)
                                     )

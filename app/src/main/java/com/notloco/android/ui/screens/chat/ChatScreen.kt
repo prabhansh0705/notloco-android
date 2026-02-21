@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Videocam
@@ -82,6 +83,7 @@ import com.notloco.android.data.models.ChatMessage
 import com.notloco.android.data.models.CoachDetails
 import com.notloco.android.data.models.UiState
 import com.notloco.android.ui.theme.*
+import com.notloco.android.utils.AudioPlayerManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -96,8 +98,10 @@ import java.util.TimeZone
 fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel()
 ) {
+    val appContext = LocalContext.current
     val chatState by viewModel.chatState.collectAsState()
     val pinnedChatState by viewModel.pinnedChatState.collectAsState()
+    val playingUrl by AudioPlayerManager.playingUrl.collectAsState()
     val coachState by viewModel.coachState.collectAsState()
     val isVideoCheckInAvailable by viewModel.isVideoCheckInAvailable.collectAsState()
     val messages = (chatState as? UiState.Success)?.data?.messages.orEmpty()
@@ -324,6 +328,11 @@ fun ChatScreen(
                                 items(sectionMessages, key = { it.id }) { message ->
                                     ChatMessageItem(
                                         message = message,
+                                        isPlaying = playingUrl == (message.audioUrl ?: message.audio),
+                                        onPlayClick = {
+                                            val url = message.audioUrl ?: message.audio
+                                            url?.let { AudioPlayerManager.playOrToggle(appContext, it) }
+                                        },
                                         onMessageClick = { selectedMessageForDetail = message },
                                         onMessageLongClick = { selectedMessageForActions = message }
                                     )
@@ -506,6 +515,8 @@ private fun DateChip(text: String) {
 @Composable
 private fun ChatMessageItem(
     message: ChatMessage,
+    isPlaying: Boolean = false,
+    onPlayClick: () -> Unit = {},
     onMessageClick: () -> Unit = {},
     onMessageLongClick: () -> Unit = {}
 ) {
@@ -608,12 +619,13 @@ private fun ChatMessageItem(
                                                 listOf(Color(0xFFF7C47A), NLPrimaryColor)
                                             )
                                         }
-                                    ),
+                                    )
+                                    .clickable { onPlayClick() },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Filled.PlayArrow,
-                                    contentDescription = "Play",
+                                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                    contentDescription = if (isPlaying) "Pause" else "Play",
                                     tint = NLWhite,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -839,8 +851,12 @@ private fun ChatDetailSheet(
     message: ChatMessage,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val isUserMessage = message.senderType.equals("user", ignoreCase = true)
+    val currentPlayingUrl by AudioPlayerManager.playingUrl.collectAsState()
+    val audioUrl = message.audioUrl ?: message.audio
+    val isPlayingThis = currentPlayingUrl == audioUrl
     var isEditing by remember { mutableStateOf(false) }
     var editedTranscription by remember(message.id) {
         mutableStateOf(message.transcription ?: "")
@@ -944,12 +960,15 @@ private fun ChatDetailSheet(
                                                     listOf(Color(0xFFF7C47A), NLPrimaryColor)
                                                 }
                                             )
-                                        ),
+                                        )
+                                        .clickable {
+                                            audioUrl?.let { AudioPlayerManager.playOrToggle(context, it) }
+                                        },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Filled.PlayArrow,
-                                        contentDescription = "Play",
+                                        imageVector = if (isPlayingThis) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                        contentDescription = if (isPlayingThis) "Pause" else "Play",
                                         tint = NLWhite,
                                         modifier = Modifier.size(20.dp)
                                     )
