@@ -46,12 +46,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -99,6 +110,7 @@ fun ChatScreen(
     val coach = (coachState as? UiState.Success)?.data
     var showingPinnedMessages by rememberSaveable { mutableStateOf(false) }
     var selectedMessageForActions by rememberSaveable { mutableStateOf<ChatMessage?>(null) }
+    var selectedMessageForDetail by remember { mutableStateOf<ChatMessage?>(null) }
     val displayedMessages = if (showingPinnedMessages) pinnedMessages else messages
     val grouped = displayedMessages.groupBy { sectionLabel(it.createdAt) }
     val listState = rememberLazyListState()
@@ -312,6 +324,7 @@ fun ChatScreen(
                                 items(sectionMessages, key = { it.id }) { message ->
                                     ChatMessageItem(
                                         message = message,
+                                        onMessageClick = { selectedMessageForDetail = message },
                                         onMessageLongClick = { selectedMessageForActions = message }
                                     )
                                 }
@@ -401,7 +414,17 @@ fun ChatScreen(
                             ?.setPrimaryClip(ClipData.newPlainText("Transcript", message.transcription ?: ""))
                         selectedMessageForActions = null
                     },
-                    onViewFullTranscript = { selectedMessageForActions = null }
+                    onViewFullTranscript = {
+                        selectedMessageForActions = null
+                        selectedMessageForDetail = message
+                    }
+                )
+            }
+
+            selectedMessageForDetail?.let { message ->
+                ChatDetailSheet(
+                    message = message,
+                    onDismiss = { selectedMessageForDetail = null }
                 )
             }
         }
@@ -483,6 +506,7 @@ private fun DateChip(text: String) {
 @Composable
 private fun ChatMessageItem(
     message: ChatMessage,
+    onMessageClick: () -> Unit = {},
     onMessageLongClick: () -> Unit = {}
 ) {
     val isUserMessage = message.senderType.equals("user", ignoreCase = true)
@@ -550,7 +574,7 @@ private fun ChatMessageItem(
                             }
                         )
                         .combinedClickable(
-                            onClick = onMessageLongClick,
+                            onClick = onMessageClick,
                             onLongClick = onMessageLongClick,
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
@@ -800,4 +824,220 @@ private fun sectionLabel(createdAt: String?): String {
     if (createdAt.isNullOrBlank()) return "Recent"
     val parsed = parseServerDate(createdAt) ?: return createdAt.substringBefore("T")
     return formatSectionDate(parsed)
+}
+
+private fun formatDetailDate(createdAt: String?): String {
+    if (createdAt.isNullOrBlank()) return "Recent"
+    val date = parseServerDate(createdAt) ?: return "Recent"
+    val output = SimpleDateFormat("dd MMM yy, HH:mm", Locale.US)
+    return output.format(date)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChatDetailSheet(
+    message: ChatMessage,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val isUserMessage = message.senderType.equals("user", ignoreCase = true)
+    var isEditing by remember { mutableStateOf(false) }
+    var editedTranscription by remember(message.id) {
+        mutableStateOf(message.transcription ?: "")
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = NLWhite,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .width(36.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(NLTextTertiary)
+            )
+        }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.75f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 100.dp)
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Date
+                Text(
+                    text = formatDetailDate(message.createdAt),
+                    color = NLTextSecondary,
+                    fontSize = 15.sp,
+                    fontFamily = GeomFamily,
+                    fontWeight = FontWeight.Light,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Audio player card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isUserMessage) NLWhite else Color.Transparent
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .then(
+                                if (!isUserMessage) {
+                                    Modifier.background(
+                                        brush = Brush.radialGradient(
+                                            listOf(
+                                                NLCoachBubbleGradientStart,
+                                                NLCoachBubbleGradientEnd
+                                            )
+                                        )
+                                    )
+                                } else Modifier
+                            )
+                            .padding(16.dp)
+                    ) {
+                        // Audio player row
+                        message.audioLength?.takeIf { it.isNotBlank() }?.let { duration ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        Brush.linearGradient(
+                                            listOf(
+                                                Color(0xFFFFF6E8),
+                                                Color(0xFFFFF0D6)
+                                            )
+                                        )
+                                    )
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.linearGradient(
+                                                if (isUserMessage) {
+                                                    listOf(Color(0xFF67B1C0), NLPrimaryColor)
+                                                } else {
+                                                    listOf(Color(0xFFF7C47A), NLPrimaryColor)
+                                                }
+                                            )
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.PlayArrow,
+                                        contentDescription = "Play",
+                                        tint = NLWhite,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                WaveformPlaceholder(
+                                    modifier = Modifier.weight(1f),
+                                    isUserMessage = isUserMessage
+                                )
+                                Text(
+                                    text = duration,
+                                    fontSize = 12.sp,
+                                    color = NLTextSecondary,
+                                    fontFamily = GeomFamily
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Full transcription text
+                if (isEditing) {
+                    OutlinedTextField(
+                        value = editedTranscription,
+                        onValueChange = { editedTranscription = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp),
+                        textStyle = TextStyle(
+                            fontSize = 15.sp,
+                            fontFamily = GeomFamily,
+                            color = NLTextPrimary,
+                            lineHeight = 24.sp
+                        ),
+                        minLines = 4
+                    )
+                } else {
+                    Text(
+                        text = message.transcription?.ifBlank { "Preparing transcript..." }
+                            ?: "Preparing transcript...",
+                        color = NLTextPrimary,
+                        fontSize = 15.sp,
+                        fontFamily = GeomFamily,
+                        lineHeight = 24.sp,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                }
+            }
+
+            // Edit/Save FAB - only for user messages (matching iOS logic)
+            if (isUserMessage) {
+                FloatingActionButton(
+                    onClick = { isEditing = !isEditing },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 24.dp, bottom = 36.dp),
+                    containerColor = NLPrimaryColor,
+                    shape = CircleShape
+                ) {
+                    if (isEditing) {
+                        Text(
+                            text = "Save",
+                            color = NLWhite,
+                            fontFamily = GeomFamily,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp
+                        )
+                    } else {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = "Edit",
+                                tint = NLWhite,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Edit",
+                                color = NLWhite,
+                                fontFamily = GeomFamily,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
