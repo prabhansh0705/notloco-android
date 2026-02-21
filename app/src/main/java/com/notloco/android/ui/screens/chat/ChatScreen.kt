@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +27,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,8 +40,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,11 +71,16 @@ import com.notloco.android.data.models.ChatMessage
 import com.notloco.android.data.models.CoachDetails
 import com.notloco.android.data.models.UiState
 import com.notloco.android.ui.theme.*
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel()
@@ -81,6 +98,7 @@ fun ChatScreen(
     }
     val coach = (coachState as? UiState.Success)?.data
     var showingPinnedMessages by rememberSaveable { mutableStateOf(false) }
+    var selectedMessageForActions by rememberSaveable { mutableStateOf<ChatMessage?>(null) }
     val displayedMessages = if (showingPinnedMessages) pinnedMessages else messages
     val grouped = displayedMessages.groupBy { sectionLabel(it.createdAt) }
     val listState = rememberLazyListState()
@@ -207,7 +225,12 @@ fun ChatScreen(
                     .weight(1f)
                     .fillMaxWidth(),
                 state = listState,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 20.dp,
+                    bottom = 140.dp
+                ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 when (val state = chatState) {
@@ -287,7 +310,10 @@ fun ChatScreen(
                             grouped.forEach { (section, sectionMessages) ->
                                 item { DateChip(section) }
                                 items(sectionMessages, key = { it.id }) { message ->
-                                    ChatMessageItem(message)
+                                    ChatMessageItem(
+                                        message = message,
+                                        onMessageLongClick = { selectedMessageForActions = message }
+                                    )
                                 }
                             }
                         }
@@ -297,7 +323,7 @@ fun ChatScreen(
                 }
             }
 
-            // iOS-style mic button at bottom
+            // iOS-style mic button at bottom (Hold to record)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -305,9 +331,22 @@ fun ChatScreen(
                 contentAlignment = Alignment.BottomEnd
             ) {
                 Column(horizontalAlignment = Alignment.End) {
+                    val haptic = LocalHapticFeedback.current
                     Box(
                         modifier = Modifier
-                            .size(108.dp),
+                            .size(108.dp)
+                            .combinedClickable(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    // Tap feedback; primary action is hold to record
+                                },
+                                onLongClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    // TODO: start recording - wire to ViewModel
+                                },
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
@@ -316,8 +355,7 @@ fun ChatScreen(
                                 .clip(CircleShape)
                                 .background(NLPrimaryColor.copy(alpha = 0.08f))
                         )
-                        IconButton(
-                            onClick = { },
+                        Box(
                             modifier = Modifier
                                 .scale(pulseScale)
                                 .size(68.dp)
@@ -332,11 +370,12 @@ fun ChatScreen(
                                         )
                                     ),
                                     shape = CircleShape
-                                )
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
                             Image(
                                 painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_mic_ios),
-                                contentDescription = "Record",
+                                contentDescription = "Hold to record",
                                 modifier = Modifier.size(30.dp)
                             )
                         }
@@ -350,6 +389,20 @@ fun ChatScreen(
                         letterSpacing = (-0.2).sp
                     )
                 }
+            }
+
+            selectedMessageForActions?.let { message ->
+                val context = LocalContext.current
+                MessageActionsBottomSheet(
+                    message = message,
+                    onDismiss = { selectedMessageForActions = null },
+                    onCopyTranscript = {
+                        (context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)
+                            ?.setPrimaryClip(ClipData.newPlainText("Transcript", message.transcription ?: ""))
+                        selectedMessageForActions = null
+                    },
+                    onViewFullTranscript = { selectedMessageForActions = null }
+                )
             }
         }
     }
@@ -424,9 +477,14 @@ private fun DateChip(text: String) {
 
 /**
  * iOS-style chat card for audio messages.
+ * Receiver shows profile icon; user messages do not. Bubble colors: user = white, receiver = yellowish.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ChatMessageItem(message: ChatMessage) {
+private fun ChatMessageItem(
+    message: ChatMessage,
+    onMessageLongClick: () -> Unit = {}
+) {
     val isUserMessage = message.senderType.equals("user", ignoreCase = true)
     val transcription = message.transcription ?: "Preparing transcript..."
     val bubbleShape = RoundedCornerShape(
@@ -484,12 +542,18 @@ private fun ChatMessageItem(message: ChatMessage) {
                                 Modifier.background(
                                     brush = Brush.linearGradient(
                                         listOf(
-                                            Color(0xFFFFB589),
-                                            Color(0xFFFFF0C9)
+                                            NLCoachBubbleGradientStart,
+                                            NLCoachBubbleGradientEnd
                                         )
                                     )
                                 )
                             }
+                        )
+                        .combinedClickable(
+                            onClick = onMessageLongClick,
+                            onLongClick = onMessageLongClick,
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
                         )
                         .padding(horizontal = 14.dp, vertical = 12.dp)
                 ) {
@@ -524,7 +588,7 @@ private fun ChatMessageItem(message: ChatMessage) {
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Rounded.PlayArrow,
+                                    imageVector = Icons.Filled.PlayArrow,
                                     contentDescription = "Play",
                                     tint = NLWhite,
                                     modifier = Modifier.size(18.dp)
@@ -549,7 +613,9 @@ private fun ChatMessageItem(message: ChatMessage) {
                             color = NLTextPrimary,
                             fontFamily = GeomFamily,
                             letterSpacing = (-0.3).sp,
-                            lineHeight = 21.sp
+                            lineHeight = 21.sp,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
@@ -598,21 +664,76 @@ private fun WaveformPlaceholder(
     modifier: Modifier = Modifier,
     isUserMessage: Boolean
 ) {
-    val bars = listOf(4, 8, 11, 7, 5, 10, 14, 8, 6, 12, 15, 8, 5, 11, 6, 9, 13, 7)
     val accent = if (isUserMessage) Color(0xFF67B1C0) else NLPrimaryColor
+    val barCount = 24
     Row(
-        modifier = modifier.height(20.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(20.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        bars.forEachIndexed { index, barHeight ->
+        repeat(barCount) { index ->
+            val barHeight = listOf(4, 8, 11, 7, 5, 10, 14, 8, 6, 12, 15, 8, 5, 11, 6, 9, 13, 7)[index % 18]
             Box(
                 modifier = Modifier
-                    .width(2.dp)
+                    .weight(1f)
                     .height(barHeight.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(if (index % 4 == 0) accent else NLTextTertiary)
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MessageActionsBottomSheet(
+    message: ChatMessage,
+    onDismiss: () -> Unit,
+    onCopyTranscript: () -> Unit,
+    onViewFullTranscript: () -> Unit
+) {
+    val fullTranscript = message.transcription ?: ""
+    ModalBottomSheet(
+        onDismissRequest = onDismiss
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Message options",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = NLTextPrimary,
+                fontFamily = GeomFamily,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedButton(
+                onClick = onViewFullTranscript,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("View full transcript", fontFamily = GeomFamily)
+            }
+            OutlinedButton(
+                onClick = onCopyTranscript,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Copy transcript", fontFamily = GeomFamily)
+            }
+            if (fullTranscript.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = fullTranscript,
+                    fontSize = 14.sp,
+                    color = NLTextSecondary,
+                    fontFamily = GeomFamily,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+            }
         }
     }
 }
