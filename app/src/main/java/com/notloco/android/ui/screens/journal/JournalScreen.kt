@@ -35,12 +35,16 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,12 +53,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -73,12 +82,13 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 
-@OptIn(ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun JournalScreen(
     viewModel: JournalViewModel = hiltViewModel()
 ) {
     var showRecordingDialog by remember { mutableStateOf(false) }
+    var selectedEntry by remember { mutableStateOf<JournalEntry?>(null) }
     val journalState by viewModel.journalState.collectAsState()
     val isLoadingMore by viewModel.isLoadingMore.collectAsState()
     val journals = (journalState as? UiState.Success)?.data.orEmpty()
@@ -253,7 +263,11 @@ fun JournalScreen(
                                             viewModel.loadNextPage()
                                         }
                                     }
-                                    JournalTimelineItem(entry, isLast = index == journals.lastIndex && !viewModel.canLoadMore)
+                                    JournalTimelineItem(
+                                        entry = entry,
+                                        isLast = index == journals.lastIndex && !viewModel.canLoadMore,
+                                        onClick = { selectedEntry = entry }
+                                    )
                                 }
                                 if (isLoadingMore) {
                                     item(key = "loading_more") {
@@ -345,6 +359,13 @@ fun JournalScreen(
             }
         )
     }
+
+    selectedEntry?.let { entry ->
+        JournalDetailSheet(
+            entry = entry,
+            onDismiss = { selectedEntry = null }
+        )
+    }
 }
 
 @Composable
@@ -429,7 +450,7 @@ private fun EmptyJournalState(
  * - Transcription text
  */
 @Composable
-private fun JournalTimelineItem(entry: JournalEntry, isLast: Boolean = false) {
+private fun JournalTimelineItem(entry: JournalEntry, isLast: Boolean = false, onClick: () -> Unit = {}) {
     val mood = entry.chatgptResponse?.takeIf { it.isNotBlank() }
 
     Row(
@@ -468,7 +489,8 @@ private fun JournalTimelineItem(entry: JournalEntry, isLast: Boolean = false) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 12.dp),
+                .padding(bottom = 12.dp)
+                .clickable { onClick() },
             shape = RoundedCornerShape(14.dp),
             colors = CardDefaults.cardColors(containerColor = NLWhite),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -749,4 +771,220 @@ fun RecordingDialog(
             }
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun JournalDetailSheet(
+    entry: JournalEntry,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val mood = entry.chatgptResponse?.takeIf { it.isNotBlank() }
+    var isEditing by remember { mutableStateOf(false) }
+    var editedTranscription by remember(entry.id) {
+        mutableStateOf(entry.transcription ?: "")
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = NLWhite,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 6.dp)
+                    .width(36.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(NLTextTertiary)
+            )
+        }
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 100.dp)
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Date
+                Text(
+                    text = formatDate(entry.createdAt),
+                    color = NLTextSecondary,
+                    fontSize = 15.sp,
+                    fontFamily = GeomFamily,
+                    fontWeight = FontWeight.Light,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Card with mood + audio player
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = NLWhite),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        // Mood row + delete
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Mood: ",
+                                color = Color(0xFFEA6A72),
+                                fontSize = 15.sp,
+                                fontFamily = GeomFamily,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = mood ?: "Analyzing Audio...",
+                                color = if (mood != null) NLTextPrimary else NLPrimaryColor,
+                                fontSize = 15.sp,
+                                fontFamily = GeomFamily,
+                                fontStyle = if (mood == null) FontStyle.Italic else FontStyle.Normal,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(
+                                onClick = { },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = "Delete",
+                                    tint = NLError,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Audio player row
+                        entry.audioLength?.takeIf { it.isNotBlank() }?.let { duration ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        Brush.linearGradient(
+                                            listOf(
+                                                Color(0xFFFFF6E8),
+                                                Color(0xFFFFF0D6)
+                                            )
+                                        )
+                                    )
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.linearGradient(
+                                                listOf(Color(0xFF67B1C0), NLPrimaryColor)
+                                            )
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.PlayArrow,
+                                        contentDescription = "Play",
+                                        tint = NLWhite,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                JournalWaveform(modifier = Modifier.weight(1f))
+                                Text(
+                                    text = duration,
+                                    fontSize = 12.sp,
+                                    color = NLTextSecondary,
+                                    fontFamily = GeomFamily
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Full transcription text
+                if (isEditing) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = editedTranscription,
+                        onValueChange = { editedTranscription = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp),
+                        textStyle = TextStyle(
+                            fontSize = 15.sp,
+                            fontFamily = GeomFamily,
+                            color = NLTextPrimary,
+                            lineHeight = 24.sp
+                        ),
+                        minLines = 4
+                    )
+                } else {
+                    Text(
+                        text = entry.transcription?.ifBlank { "(No transcription)" }
+                            ?: "(No transcription)",
+                        color = NLTextPrimary,
+                        fontSize = 15.sp,
+                        fontFamily = GeomFamily,
+                        lineHeight = 24.sp,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                }
+            }
+
+            // Edit/Save FAB
+            FloatingActionButton(
+                onClick = { isEditing = !isEditing },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 24.dp, bottom = 36.dp),
+                containerColor = NLPrimaryColor,
+                shape = CircleShape
+            ) {
+                if (isEditing) {
+                    Text(
+                        text = "Save",
+                        color = NLWhite,
+                        fontFamily = GeomFamily,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp
+                    )
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Edit,
+                            contentDescription = "Edit",
+                            tint = NLWhite,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "Edit",
+                            color = NLWhite,
+                            fontFamily = GeomFamily,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
