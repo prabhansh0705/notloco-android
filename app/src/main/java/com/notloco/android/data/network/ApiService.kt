@@ -55,7 +55,10 @@ interface ApiService {
 
     // ==================== Journal ====================
     @GET("journal/journals/")
-    suspend fun getJournalList(@Query("page") page: Int = 1): Response<JournalListResponse>
+    suspend fun getJournalList(
+        @Query("page") page: Int = 1,
+        @Query("id") userId: Int? = null
+    ): Response<JournalListResponse>
 
     @Multipart
     @POST("journal/upload-audio/")

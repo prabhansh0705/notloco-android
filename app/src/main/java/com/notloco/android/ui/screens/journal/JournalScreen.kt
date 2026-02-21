@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -62,6 +63,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.notloco.android.R
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.snapshotFlow
 import com.notloco.android.data.models.JournalEntry
 import com.notloco.android.data.models.UiState
 import com.notloco.android.ui.theme.*
@@ -77,7 +81,8 @@ fun JournalScreen(
 ) {
     var showRecordingDialog by remember { mutableStateOf(false) }
     val journalState by viewModel.journalState.collectAsState()
-    val journals = (journalState as? UiState.Success)?.data?.transcriptions.orEmpty()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
+    val journals = (journalState as? UiState.Success)?.data.orEmpty()
 
     val permissionsState = rememberMultiplePermissionsState(
         permissions = PermissionUtils.AUDIO_PERMISSIONS.toList()
@@ -232,7 +237,27 @@ fun JournalScreen(
                             }
                         )
                     } else {
+                        val listState = rememberLazyListState()
+
+                        val shouldLoadMore = remember {
+                            derivedStateOf {
+                                val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                                val totalItems = listState.layoutInfo.totalItemsCount
+                                lastVisibleItem >= totalItems - 3
+                            }
+                        }
+
+                        LaunchedEffect(Unit) {
+                            snapshotFlow { shouldLoadMore.value }
+                                .collect { shouldLoad ->
+                                    if (shouldLoad && viewModel.canLoadMore && !isLoadingMore) {
+                                        viewModel.loadNextPage()
+                                    }
+                                }
+                        }
+
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
                                 start = 16.dp,
@@ -243,7 +268,23 @@ fun JournalScreen(
                             verticalArrangement = Arrangement.spacedBy(0.dp)
                         ) {
                             items(journals, key = { it.id }) { entry ->
-                                JournalTimelineItem(entry, isLast = entry == journals.last())
+                                JournalTimelineItem(entry, isLast = entry == journals.last() && !viewModel.canLoadMore)
+                            }
+                            if (isLoadingMore) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            color = NLPrimaryColor,
+                                            strokeWidth = 2.dp,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

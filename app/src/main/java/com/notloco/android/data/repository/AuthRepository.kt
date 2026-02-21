@@ -138,7 +138,8 @@ class AuthRepository @Inject constructor(
     suspend fun getJournalList(page: Int = 1): Flow<Resource<JournalListResponse>> = flow {
         try {
             emit(Resource.Loading())
-            val response = apiService.getJournalList(page)
+            val userId = preferencesManager.userId.first()
+            val response = apiService.getJournalList(page, userId)
             if (response.isSuccessful && response.body() != null) {
                 emit(Resource.Success(response.body()!!))
             } else {
