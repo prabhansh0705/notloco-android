@@ -5,8 +5,9 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,18 +26,38 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,19 +68,43 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.notloco.android.R
 import com.notloco.android.data.models.ChatMessage
+import com.notloco.android.data.models.CoachDetails
 import com.notloco.android.data.models.UiState
 import com.notloco.android.ui.theme.*
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel()
 ) {
     val chatState by viewModel.chatState.collectAsState()
+    val pinnedChatState by viewModel.pinnedChatState.collectAsState()
     val coachState by viewModel.coachState.collectAsState()
+    val isVideoCheckInAvailable by viewModel.isVideoCheckInAvailable.collectAsState()
     val messages = (chatState as? UiState.Success)?.data?.messages.orEmpty()
+    val pinnedMessagesFromApi = (pinnedChatState as? UiState.Success)?.data?.messages.orEmpty()
+    val pinnedMessages = if (pinnedMessagesFromApi.isNotEmpty()) {
+        pinnedMessagesFromApi
+    } else {
+        messages.filter { it.isPinned }
+    }
     val coach = (coachState as? UiState.Success)?.data
-    val grouped = messages.groupBy { sectionLabel(it.createdAt) }
+    var showingPinnedMessages by rememberSaveable { mutableStateOf(false) }
+    var selectedMessageForActions by rememberSaveable { mutableStateOf<ChatMessage?>(null) }
+    val displayedMessages = if (showingPinnedMessages) pinnedMessages else messages
+    val grouped = displayedMessages.groupBy { sectionLabel(it.createdAt) }
     val listState = rememberLazyListState()
+    val subtitle = coach?.headline
+        ?.takeIf { it.isNotBlank() }
+        ?: buildCoachSubtitle(coach)
 
     val pulseTransition = rememberInfiniteTransition(label = "mic_pulse")
     val pulseScale by pulseTransition.animateFloat(
@@ -71,6 +116,12 @@ fun ChatScreen(
         ),
         label = "mic_scale"
     )
+
+    LaunchedEffect(pinnedMessages.size) {
+        if (pinnedMessages.isEmpty()) {
+            showingPinnedMessages = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -114,20 +165,50 @@ fun ChatScreen(
                     color = NLTextPrimary,
                     fontFamily = GeomFamily,
                     letterSpacing = (-0.4).sp,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = listOfNotNull(coach?.profession, coach?.expertise)
-                        .joinToString(" | ")
-                        .ifBlank { "Tap a note to open detail" },
+                    text = subtitle,
                     fontSize = 13.sp,
                     color = NLTextSecondary,
                     fontFamily = GeomFamily,
                     letterSpacing = (-0.2).sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 2,
+                    overflow = TextOverflow.Clip
+                )
+            }
+
+            IconButton(
+                onClick = { },
+                enabled = isVideoCheckInAvailable,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isVideoCheckInAvailable) {
+                            Brush.linearGradient(
+                                listOf(
+                                    Color(0xFFE1D45C),
+                                    NLPrimaryColor
+                                )
+                            )
+                        } else {
+                            Brush.linearGradient(
+                                listOf(
+                                    NLTextTertiary.copy(alpha = 0.3f),
+                                    NLTextTertiary.copy(alpha = 0.3f)
+                                )
+                            )
+                        }
+                    )
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Videocam,
+                    contentDescription = "Video check-in",
+                    tint = if (isVideoCheckInAvailable) NLWhite else NLTextSecondary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -144,7 +225,12 @@ fun ChatScreen(
                     .weight(1f)
                     .fillMaxWidth(),
                 state = listState,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 20.dp,
+                    bottom = 140.dp
+                ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 when (val state = chatState) {
@@ -177,7 +263,10 @@ fun ChatScreen(
                                 fontSize = 14.sp,
                                 fontFamily = GeomFamily
                             )
-                            TextButton(onClick = { viewModel.fetchChats() }) {
+                            TextButton(onClick = {
+                                viewModel.fetchChats()
+                                viewModel.fetchPinnedChats()
+                            }) {
                                 Text(
                                     "Retry",
                                     color = NLPrimaryColor,
@@ -189,7 +278,16 @@ fun ChatScreen(
                     }
 
                     is UiState.Success -> {
-                        if (messages.isEmpty()) {
+                        if (pinnedMessages.isNotEmpty()) {
+                            item {
+                                PinnedNotesChip(
+                                    isSelected = showingPinnedMessages,
+                                    onClick = { showingPinnedMessages = !showingPinnedMessages }
+                                )
+                            }
+                        }
+
+                        if (displayedMessages.isEmpty()) {
                             item {
                                 Box(
                                     modifier = Modifier
@@ -212,7 +310,10 @@ fun ChatScreen(
                             grouped.forEach { (section, sectionMessages) ->
                                 item { DateChip(section) }
                                 items(sectionMessages, key = { it.id }) { message ->
-                                    ChatMessageItem(message)
+                                    ChatMessageItem(
+                                        message = message,
+                                        onMessageLongClick = { selectedMessageForActions = message }
+                                    )
                                 }
                             }
                         }
@@ -222,30 +323,64 @@ fun ChatScreen(
                 }
             }
 
-            // iOS-style mic button at bottom
+            // iOS-style mic button at bottom (Hold to record)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 80.dp),
-                contentAlignment = Alignment.Center
+                    .padding(end = 16.dp, bottom = 80.dp),
+                contentAlignment = Alignment.BottomEnd
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(
-                        onClick = { },
+                Column(horizontalAlignment = Alignment.End) {
+                    val haptic = LocalHapticFeedback.current
+                    Box(
                         modifier = Modifier
-                            .scale(pulseScale)
-                            .size(68.dp)
-                            .shadow(8.dp, CircleShape, clip = false)
-                            .clip(CircleShape)
-                            .background(NLPrimaryColor)
+                            .size(108.dp)
+                            .combinedClickable(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    // Tap feedback; primary action is hold to record
+                                },
+                                onLongClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    // TODO: start recording - wire to ViewModel
+                                },
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_mic_ios),
-                            contentDescription = "Record",
-                            modifier = Modifier.size(30.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(108.dp)
+                                .clip(CircleShape)
+                                .background(NLPrimaryColor.copy(alpha = 0.08f))
                         )
+                        Box(
+                            modifier = Modifier
+                                .scale(pulseScale)
+                                .size(68.dp)
+                                .shadow(8.dp, CircleShape, clip = false)
+                                .clip(CircleShape)
+                                .background(
+                                    brush = Brush.linearGradient(
+                                        listOf(
+                                            Color(0xFFE1D45C),
+                                            NLPrimaryColor,
+                                            Color(0xFF67B1C0)
+                                        )
+                                    ),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_mic_ios),
+                                contentDescription = "Hold to record",
+                                modifier = Modifier.size(30.dp)
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+
                     Text(
                         text = "Hold to record",
                         fontSize = 12.sp,
@@ -255,12 +390,68 @@ fun ChatScreen(
                     )
                 }
             }
+
+            selectedMessageForActions?.let { message ->
+                val context = LocalContext.current
+                MessageActionsBottomSheet(
+                    message = message,
+                    onDismiss = { selectedMessageForActions = null },
+                    onCopyTranscript = {
+                        (context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)
+                            ?.setPrimaryClip(ClipData.newPlainText("Transcript", message.transcription ?: ""))
+                        selectedMessageForActions = null
+                    },
+                    onViewFullTranscript = { selectedMessageForActions = null }
+                )
+            }
         }
     }
 }
 
 /**
- * iOS-style date section chip
+ * iOS-style pinned notes toggle.
+ */
+@Composable
+private fun PinnedNotesChip(
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        TextButton(
+            onClick = onClick,
+            modifier = Modifier
+                .clip(RoundedCornerShape(40.dp))
+                .background(if (isSelected) NLPrimaryColor else NLWhite)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.PushPin,
+                    contentDescription = "Pinned",
+                    tint = if (isSelected) NLWhite else NLBlack,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "Pinned Notes",
+                    color = if (isSelected) NLWhite else NLBlack,
+                    fontFamily = GeomFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 13.sp
+                )
+            }
+        }
+    }
+}
+
+/**
+ * iOS-style date section chip.
  */
 @Composable
 private fun DateChip(text: String) {
@@ -285,21 +476,31 @@ private fun DateChip(text: String) {
 }
 
 /**
- * iOS-style chat message bubble with tail effect
+ * iOS-style chat card for audio messages.
+ * Receiver shows profile icon; user messages do not. Bubble colors: user = white, receiver = yellowish.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ChatMessageItem(message: ChatMessage) {
-    val isCoach = message.senderType.equals("coach", ignoreCase = true)
-    val content = message.transcription ?: message.audioUrl ?: "Audio message"
+private fun ChatMessageItem(
+    message: ChatMessage,
+    onMessageLongClick: () -> Unit = {}
+) {
+    val isUserMessage = message.senderType.equals("user", ignoreCase = true)
+    val transcription = message.transcription ?: "Preparing transcript..."
+    val bubbleShape = RoundedCornerShape(
+        topStart = 8.dp,
+        topEnd = 8.dp,
+        bottomStart = if (isUserMessage) 8.dp else 2.dp,
+        bottomEnd = if (isUserMessage) 2.dp else 8.dp
+    )
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        horizontalArrangement = if (isCoach) Arrangement.Start else Arrangement.End
+            .padding(vertical = 2.dp, horizontal = 2.dp),
+        horizontalArrangement = if (isUserMessage) Arrangement.End else Arrangement.Start
     ) {
-        // Coach avatar for coach messages
-        if (isCoach) {
+        if (!isUserMessage) {
             Box(
                 modifier = Modifier
                     .size(28.dp)
@@ -323,83 +524,280 @@ private fun ChatMessageItem(message: ChatMessage) {
 
         Column(
             modifier = Modifier
-                .fillMaxWidth(0.78f)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 18.dp,
-                        topEnd = 18.dp,
-                        bottomStart = if (isCoach) 4.dp else 18.dp,
-                        bottomEnd = if (isCoach) 18.dp else 4.dp
-                    )
-                )
-                .background(
-                    if (isCoach) NLChatBubbleCoach else NLChatBubbleUser
-                )
-                .then(
-                    if (isCoach) Modifier.shadow(
-                        1.dp,
-                        RoundedCornerShape(18.dp),
-                        clip = false
-                    ) else Modifier
-                )
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .fillMaxWidth(0.82f)
         ) {
-            Text(
-                text = content,
-                fontSize = 15.sp,
-                color = if (isCoach) NLChatBubbleCoachText else NLChatBubbleUserText,
-                fontFamily = GeomFamily,
-                letterSpacing = (-0.3).sp,
-                lineHeight = 20.sp
-            )
+            Box {
+                Column(
+                    modifier = Modifier
+                        .shadow(
+                            elevation = if (isUserMessage) 6.dp else 1.dp,
+                            shape = bubbleShape,
+                            clip = false
+                        )
+                        .clip(bubbleShape)
+                        .then(
+                            if (isUserMessage) {
+                                Modifier.background(NLWhite)
+                            } else {
+                                Modifier.background(
+                                    brush = Brush.linearGradient(
+                                        listOf(
+                                            NLCoachBubbleGradientStart,
+                                            NLCoachBubbleGradientEnd
+                                        )
+                                    )
+                                )
+                            }
+                        )
+                        .combinedClickable(
+                            onClick = onMessageLongClick,
+                            onLongClick = onMessageLongClick,
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        )
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                ) {
+                    if (message.requestVideoCheckIn) {
+                        Text(
+                            text = "You requested a video check-in",
+                            fontSize = 16.sp,
+                            color = NLTextPrimary,
+                            fontFamily = GeomFamily,
+                            lineHeight = 22.sp
+                        )
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (isUserMessage) {
+                                            Brush.linearGradient(
+                                                listOf(Color(0xFF67B1C0), NLPrimaryColor)
+                                            )
+                                        } else {
+                                            Brush.linearGradient(
+                                                listOf(Color(0xFFF7C47A), NLPrimaryColor)
+                                            )
+                                        }
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.PlayArrow,
+                                    contentDescription = "Play",
+                                    tint = NLWhite,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            WaveformPlaceholder(
+                                modifier = Modifier.weight(1f),
+                                isUserMessage = isUserMessage
+                            )
+                            Text(
+                                text = message.audioLength?.ifBlank { "--:--" } ?: "--:--",
+                                fontSize = 12.sp,
+                                color = NLTextPrimary,
+                                fontFamily = GeomFamily
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = transcription,
+                            fontSize = 15.sp,
+                            color = NLTextPrimary,
+                            fontFamily = GeomFamily,
+                            letterSpacing = (-0.3).sp,
+                            lineHeight = 21.sp,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    message.links?.takeIf { it.isNotBlank() }?.let { link ->
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = link,
+                            fontSize = 13.sp,
+                            color = NLPrimaryColor,
+                            fontFamily = GeomFamily,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                if (message.isPinned) {
+                    Icon(
+                        imageVector = Icons.Rounded.PushPin,
+                        contentDescription = "Pinned",
+                        tint = NLPrimaryColor,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .size(16.dp)
+                    )
+                }
+            }
+
             message.createdAt?.takeIf { it.isNotBlank() }?.let { timestamp ->
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = formatTimestamp(timestamp),
                     fontSize = 11.sp,
-                    color = if (isCoach) NLTextSecondary else NLWhite.copy(alpha = 0.7f),
+                    color = NLTextSecondary,
                     fontFamily = GeomFamily,
-                    letterSpacing = (-0.1).sp
+                    letterSpacing = (-0.1).sp,
+                    modifier = Modifier.padding(top = 2.dp)
                 )
             }
         }
     }
 }
 
-/**
- * Format timestamp for display - iOS style "HH:mm" for today, date otherwise
- */
-private fun formatTimestamp(timestamp: String): String {
-    if (timestamp.isBlank()) return ""
-    // Try to extract time portion "HH:mm" from ISO timestamp
-    return try {
-        if (timestamp.contains("T")) {
-            val timePart = timestamp.substringAfter("T").substringBefore(".")
-            if (timePart.length >= 5) timePart.substring(0, 5) else timePart
-        } else if (timestamp.length >= 16) {
-            timestamp.substring(11, 16)
-        } else {
-            timestamp
+@Composable
+private fun WaveformPlaceholder(
+    modifier: Modifier = Modifier,
+    isUserMessage: Boolean
+) {
+    val accent = if (isUserMessage) Color(0xFF67B1C0) else NLPrimaryColor
+    val barCount = 24
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(20.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(barCount) { index ->
+            val barHeight = listOf(4, 8, 11, 7, 5, 10, 14, 8, 6, 12, 15, 8, 5, 11, 6, 9, 13, 7)[index % 18]
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(barHeight.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(if (index % 4 == 0) accent else NLTextTertiary)
+            )
         }
-    } catch (e: Exception) {
-        timestamp
     }
 }
 
-/**
- * Group messages by date section
- */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MessageActionsBottomSheet(
+    message: ChatMessage,
+    onDismiss: () -> Unit,
+    onCopyTranscript: () -> Unit,
+    onViewFullTranscript: () -> Unit
+) {
+    val fullTranscript = message.transcription ?: ""
+    ModalBottomSheet(
+        onDismissRequest = onDismiss
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Message options",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = NLTextPrimary,
+                fontFamily = GeomFamily,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedButton(
+                onClick = onViewFullTranscript,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("View full transcript", fontFamily = GeomFamily)
+            }
+            OutlinedButton(
+                onClick = onCopyTranscript,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Copy transcript", fontFamily = GeomFamily)
+            }
+            if (fullTranscript.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = fullTranscript,
+                    fontSize = 14.sp,
+                    color = NLTextSecondary,
+                    fontFamily = GeomFamily,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+            }
+        }
+    }
+}
+
+private fun formatTimestamp(timestamp: String): String {
+    if (timestamp.isBlank()) return ""
+    val date = parseServerDate(timestamp) ?: return timestamp
+    val output = SimpleDateFormat("h:mm a", Locale.US)
+    return output.format(date)
+}
+
+private fun buildCoachSubtitle(coach: CoachDetails?): String {
+    if (coach == null) return "Tap a note to open detail"
+    coach.headline?.takeIf { it.isNotBlank() }?.let { return it }
+    val years = coach.yearsExperience?.let { "$it years of experience" }
+    return listOfNotNull(coach.profession, years)
+        .filter { it.isNotBlank() }
+        .joinToString(" | ")
+        .ifBlank {
+            listOfNotNull(coach.profession, coach.expertise)
+                .filter { it.isNotBlank() }
+                .joinToString(" | ")
+                .ifBlank { "Tap a note to open detail" }
+        }
+}
+
+private fun parseServerDate(value: String): Date? {
+    val candidates = listOf(
+        "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'",
+        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX",
+        "yyyy-MM-dd'T'HH:mm:ssXXX"
+    )
+
+    candidates.forEach { pattern ->
+        try {
+            val parser = SimpleDateFormat(pattern, Locale.US)
+            parser.timeZone = TimeZone.getTimeZone("UTC")
+            parser.parse(value)?.let { return it }
+        } catch (_: Exception) {
+            // try next parser
+        }
+    }
+
+    return null
+}
+
+private fun formatSectionDate(date: Date): String {
+    val calendar = java.util.Calendar.getInstance().apply { time = date }
+    val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+    val suffix = when {
+        day in 11..13 -> "th"
+        day % 10 == 1 -> "st"
+        day % 10 == 2 -> "nd"
+        day % 10 == 3 -> "rd"
+        else -> "th"
+    }
+    val formatter = SimpleDateFormat("EEE, d'$suffix' MMM yy", Locale.US)
+    return formatter.format(date)
+}
+
 private fun sectionLabel(createdAt: String?): String {
     if (createdAt.isNullOrBlank()) return "Recent"
-    return try {
-        if (createdAt.contains("T")) {
-            createdAt.substringBefore("T")
-        } else if (createdAt.length >= 10) {
-            createdAt.substring(0, 10)
-        } else {
-            createdAt
-        }
-    } catch (e: Exception) {
-        "Recent"
-    }
+    val parsed = parseServerDate(createdAt) ?: return createdAt.substringBefore("T")
+    return formatSectionDate(parsed)
 }

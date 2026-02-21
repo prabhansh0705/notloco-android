@@ -21,28 +21,74 @@ class ChatViewModel @Inject constructor(
 
     private val _chatState = MutableStateFlow<UiState<ChatListResponse>>(UiState.Loading)
     val chatState: StateFlow<UiState<ChatListResponse>> = _chatState.asStateFlow()
+    private val _pinnedChatState = MutableStateFlow<UiState<ChatListResponse>>(UiState.Loading)
+    val pinnedChatState: StateFlow<UiState<ChatListResponse>> = _pinnedChatState.asStateFlow()
     private val _coachState = MutableStateFlow<UiState<CoachDetails>>(UiState.Loading)
     val coachState: StateFlow<UiState<CoachDetails>> = _coachState.asStateFlow()
+    private val _isVideoCheckInAvailable = MutableStateFlow(false)
+    val isVideoCheckInAvailable: StateFlow<Boolean> = _isVideoCheckInAvailable.asStateFlow()
+
+    private var hasRequestedCoachFallback = false
 
     init {
         fetchChats()
-        fetchCoachDetails()
+        fetchPinnedChats()
     }
 
-    fun fetchChats(isPinned: Boolean? = null) {
+    fun fetchChats() {
+        fetchChatsInternal(isPinned = false)
+    }
+
+    fun fetchPinnedChats() {
+        fetchChatsInternal(isPinned = true)
+    }
+
+    private fun fetchChatsInternal(isPinned: Boolean) {
         viewModelScope.launch {
-            authRepository.getUserChats(isPinned).collect { resource ->
+            authRepository.getUserChats(isPinned = if (isPinned) true else null).collect { resource ->
                 when (resource) {
-                    is Resource.Loading -> _chatState.value = UiState.Loading
+                    is Resource.Loading -> {
+                        if (isPinned) {
+                            _pinnedChatState.value = UiState.Loading
+                        } else {
+                            _chatState.value = UiState.Loading
+                        }
+                    }
                     is Resource.Success -> {
-                        resource.data?.let {
-                            _chatState.value = UiState.Success(it)
+                        resource.data?.let { chatResponse ->
+                            if (isPinned) {
+                                _pinnedChatState.value = UiState.Success(chatResponse)
+                            } else {
+                                _chatState.value = UiState.Success(chatResponse)
+                                chatResponse.currentCoachDetail?.let { coach ->
+                                    _coachState.value = UiState.Success(coach)
+                                } ?: run {
+                                    if (!hasRequestedCoachFallback) {
+                                        hasRequestedCoachFallback = true
+                                        fetchCoachDetails()
+                                    }
+                                }
+                                _isVideoCheckInAvailable.value = chatResponse.videoCheckInAvailable ?: false
+                            }
                         } ?: run {
-                            _chatState.value = UiState.Error("No chats received")
+                            if (isPinned) {
+                                _pinnedChatState.value = UiState.Error("No pinned chats received")
+                            } else {
+                                _chatState.value = UiState.Error("No chats received")
+                            }
                         }
                     }
                     is Resource.Error -> {
-                        _chatState.value = UiState.Error(resource.message ?: "Failed to load chats")
+                        if (isPinned) {
+                            _pinnedChatState.value =
+                                UiState.Error(resource.message ?: "Failed to load pinned chats")
+                        } else {
+                            _chatState.value = UiState.Error(resource.message ?: "Failed to load chats")
+                            if (!hasRequestedCoachFallback) {
+                                hasRequestedCoachFallback = true
+                                fetchCoachDetails()
+                            }
+                        }
                     }
                 }
             }

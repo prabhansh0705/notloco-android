@@ -4,12 +4,14 @@ import androidx.compose.ui.graphics.Color
 
 // NotLoco Brand Colors (matched to iOS)
 val NLBackgroundColor = Color(0xFFFFF9EA)
-val NLPrimaryColor = Color(0xFFF97F37)
+val NLPrimaryColor = Color(0xFFE9820A)
 val NLBlack = Color(0xFF000000)
 val NLWhite = Color(0xFFFFFFFF)
 val NLGray = Color(0xFF808080)
 val NLLightGray = Color(0xFFF5F5F5)
 val NLDarkGray = Color(0xFF333333)
+val NLCoachBubbleGradientStart = Color(0xFFFFB589)
+val NLCoachBubbleGradientEnd = Color(0xFFFFF0C9)
 
 // Text Colors (iOS parity)
 val NLTextPrimary = Color(0xFF1A1A1A)
@@ -23,9 +25,9 @@ val NLWarning = Color(0xFFFF9500) // iOS system orange
 val NLSeparator = Color(0xFFC6C6C8) // iOS separator color
 
 // Chat bubble colors (iOS parity)
-val NLChatBubbleUser = Color(0xFFF97F37) // User messages - orange like iOS
-val NLChatBubbleCoach = Color(0xFFFFFFFF) // Coach messages - white
-val NLChatBubbleUserText = Color(0xFFFFFFFF)
+val NLChatBubbleUser = Color(0xFFFFFFFF) // User messages - white in iOS chat
+val NLChatBubbleCoach = Color(0xFFEBE2CC) // Coach-side card background tone
+val NLChatBubbleUserText = Color(0xFF1A1A1A)
 val NLChatBubbleCoachText = Color(0xFF1A1A1A)
 
 // Card & Surface colors
