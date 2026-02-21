@@ -97,20 +97,20 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .align(Alignment.BottomCenter)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 24.dp, vertical = 10.dp),
             color = Color.Transparent,
             shadowElevation = 0.dp
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(48.dp)
                     .shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(25.dp),
+                        elevation = 12.dp,
+                        shape = RoundedCornerShape(24.dp),
                         clip = false
                     )
-                    .clip(RoundedCornerShape(25.dp))
+                    .clip(RoundedCornerShape(24.dp))
                     .background(NLWhite)
             ) {
                 Row(
@@ -138,12 +138,12 @@ fun HomeScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
-                .padding(top = 10.dp, end = 16.dp)
+                .padding(top = 14.dp, end = 20.dp)
         ) {
             IconButton(
                 onClick = { showProfile = true },
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(36.dp)
                     .shadow(4.dp, CircleShape, clip = false)
                     .clip(CircleShape)
                     .background(NLWhite)

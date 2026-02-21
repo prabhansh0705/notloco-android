@@ -166,7 +166,7 @@ fun ChatScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 20.dp, end = 60.dp, top = 14.dp, bottom = 14.dp),
+                .padding(start = 20.dp, end = 64.dp, top = 14.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -614,36 +614,15 @@ private fun ChatMessageItem(
                     } else {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(34.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (isUserMessage) {
-                                            Brush.linearGradient(
-                                                listOf(Color(0xFF67B1C0), NLPrimaryColor)
-                                            )
-                                        } else {
-                                            Brush.linearGradient(
-                                                listOf(Color(0xFFF7C47A), NLPrimaryColor)
-                                            )
-                                        }
-                                    )
-                                    .clickable { onPlayClick() },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                    contentDescription = if (isPlaying) "Pause" else "Play",
-                                    tint = NLWhite,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            WaveformPlaceholder(
-                                modifier = Modifier.weight(1f),
-                                isUserMessage = isUserMessage
+                            ChatPlayButton(
+                                isPlaying = isPlaying,
+                                isUserMessage = isUserMessage,
+                                onClick = onPlayClick
+                            )
+                            AudioWaveformBars(
+                                modifier = Modifier.weight(1f)
                             )
                             Text(
                                 text = message.audioLength?.ifBlank { "--:--" } ?: "--:--",
@@ -728,6 +707,75 @@ private fun WaveformPlaceholder(
                     .height(barHeight.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(if (index % 4 == 0) accent else NLTextTertiary)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChatPlayButton(
+    isPlaying: Boolean,
+    isUserMessage: Boolean,
+    onClick: () -> Unit
+) {
+    val primary = if (isUserMessage) Color(0xFF67B1C0) else NLPrimaryColor
+    val cream = NLBackgroundColor
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(NLWhite)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawCircle(
+                color = primary,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(30.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(primary, cream),
+                        start = androidx.compose.ui.geometry.Offset(0f, Float.MAX_VALUE),
+                        end = androidx.compose.ui.geometry.Offset(Float.MAX_VALUE, 0f)
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                tint = primary,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AudioWaveformBars(modifier: Modifier = Modifier) {
+    val barCount = 40
+    val heights = listOf(3, 6, 10, 5, 8, 12, 4, 9, 14, 7, 3, 11, 6, 8, 13, 5, 10, 4, 7, 12,
+        6, 9, 3, 11, 8, 5, 14, 7, 10, 4, 12, 6, 8, 3, 9, 11, 5, 13, 7, 10)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(24.dp),
+        horizontalArrangement = Arrangement.spacedBy(1.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(barCount) { index ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(heights[index % heights.size].dp)
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(NLTextPrimary.copy(alpha = 0.7f))
             )
         }
     }
