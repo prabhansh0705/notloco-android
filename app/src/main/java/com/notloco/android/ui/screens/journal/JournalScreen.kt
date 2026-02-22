@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -122,13 +123,12 @@ fun JournalScreen(
             .statusBarsPadding()
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header: "Journal" left, avatar right
-            Row(
+            // Header: "Journal" centered
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "Journal",
@@ -138,22 +138,6 @@ fun JournalScreen(
                     color = NLTextPrimary,
                     letterSpacing = 0.37.sp
                 )
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(NLPrimaryColor.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.cheetah_profile),
-                        contentDescription = "Profile",
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(RoundedCornerShape(10.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
             }
 
             // "Journal access to therapist" toggle row (green toggle like iOS)
@@ -305,57 +289,63 @@ fun JournalScreen(
             }
         }
 
-        // Floating "How you feeling?" + mic at bottom-right (like iOS)
+        // Bottom bar: pill-shaped text box + mic button (matching iOS)
         if (journals.isNotEmpty()) {
-            Column(
+            Row(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 80.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .align(Alignment.BottomCenter)
+                    .padding(start = 20.dp, end = 20.dp, bottom = 80.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "How you feeling?",
-                    fontSize = 13.sp,
-                    color = NLPrimaryColor,
-                    fontFamily = GeomFamily,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = (-0.2).sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
                 Box(
-                    modifier = Modifier.size(68.dp),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .shadow(4.dp, RoundedCornerShape(24.dp), clip = false)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(NLWhite)
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.CenterStart
                 ) {
-                    IconButton(
-                        onClick = {
-                            if (permissionsState.allPermissionsGranted) {
-                                showRecordingDialog = true
-                            } else {
-                                permissionsState.launchMultiplePermissionRequest()
-                            }
-                        },
-                        modifier = Modifier
-                            .scale(pulseScale)
-                            .size(60.dp)
-                            .shadow(8.dp, CircleShape, clip = false)
-                            .clip(CircleShape)
-                            .background(
-                                brush = Brush.linearGradient(
-                                    listOf(
-                                        Color(0xFFE1D45C),
-                                        NLPrimaryColor,
-                                        Color(0xFF67B1C0)
-                                    )
-                                ),
-                                shape = CircleShape
-                            )
-                    ) {
-                        Image(
-                            painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_mic_ios),
-                            contentDescription = "Record journal",
-                            modifier = Modifier.size(28.dp)
+                    Text(
+                        text = "What's on your mind?",
+                        fontSize = 15.sp,
+                        color = NLPrimaryColor,
+                        fontFamily = GeomFamily,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = (-0.2).sp
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        if (permissionsState.allPermissionsGranted) {
+                            showRecordingDialog = true
+                        } else {
+                            permissionsState.launchMultiplePermissionRequest()
+                        }
+                    },
+                    modifier = Modifier
+                        .scale(pulseScale)
+                        .size(52.dp)
+                        .shadow(8.dp, CircleShape, clip = false)
+                        .clip(CircleShape)
+                        .background(
+                            brush = Brush.linearGradient(
+                                listOf(
+                                    Color(0xFFE1D45C),
+                                    NLPrimaryColor,
+                                    Color(0xFF67B1C0)
+                                )
+                            ),
+                            shape = CircleShape
                         )
-                    }
+                ) {
+                    Image(
+                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_mic_ios),
+                        contentDescription = "Record journal",
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }
@@ -502,93 +492,93 @@ private fun JournalTimelineItem(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // Journal card
-        Card(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp)
-                .clickable { onClick() },
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = NLWhite),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
-                // Date
-                Text(
-                    text = formatDate(entry.createdAt),
-                    color = NLTextSecondary,
-                    fontSize = 12.sp,
-                    fontFamily = GeomFamily,
-                    letterSpacing = (-0.1).sp
-                )
+            // Date OUTSIDE the card
+            Text(
+                text = formatDate(entry.createdAt),
+                color = NLTextSecondary,
+                fontSize = 12.sp,
+                fontFamily = GeomFamily,
+                letterSpacing = (-0.1).sp,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Mood + action icons on SAME row (matching iOS)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Mood label
+            // Journal card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(2.dp, RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White)
+                    .clickable { onClick() }
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    // Mood + action icons on SAME row
                     Row(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Mood:  ",
-                            color = NLTextPrimary,
-                            fontSize = 14.sp,
-                            fontFamily = GeomFamily,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (mood != null) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = mood,
-                                color = NLPrimaryColor,
+                                text = "Mood:  ",
+                                color = Color(0xFFEA6A72),
                                 fontSize = 14.sp,
                                 fontFamily = GeomFamily,
-                                fontStyle = FontStyle.Italic,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                fontWeight = FontWeight.ExtraBold
                             )
-                        } else {
-                            Text(
-                                text = "Analyzing Audio...",
-                                color = NLPrimaryColor,
-                                fontSize = 14.sp,
-                                fontFamily = GeomFamily,
-                                fontStyle = FontStyle.Italic,
-                                fontWeight = FontWeight.Medium
+                            if (mood != null) {
+                                Text(
+                                    text = mood,
+                                    color = NLTextPrimary,
+                                    fontSize = 14.sp,
+                                    fontFamily = GeomFamily,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            } else {
+                                Text(
+                                    text = "Analyzing Audio...",
+                                    color = NLPrimaryColor,
+                                    fontSize = 14.sp,
+                                    fontFamily = GeomFamily,
+                                    fontStyle = FontStyle.Italic,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+                        }
+
+                        IconButton(
+                            onClick = { },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Visibility,
+                                contentDescription = "View",
+                                tint = NLPrimaryColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(2.dp))
+                        IconButton(
+                            onClick = { },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = "Delete",
+                                tint = Color(0xFFEA6A72),
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
-
-                    // Eye + trash icons (right side, same row)
-                    IconButton(
-                        onClick = { },
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Visibility,
-                            contentDescription = "View",
-                            tint = NLTextSecondary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(2.dp))
-                    IconButton(
-                        onClick = { },
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = "Delete",
-                            tint = NLError,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
 
                 // Waveform + play button + duration
                 entry.audioLength?.takeIf { it.isNotBlank() }?.let { duration ->
@@ -597,33 +587,15 @@ private fun JournalTimelineItem(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Play button
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.linearGradient(
-                                        listOf(Color(0xFF67B1C0), NLPrimaryColor)
-                                    )
-                                )
-                                .clickable { onPlayClick() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                contentDescription = if (isPlaying) "Pause" else "Play",
-                                tint = NLWhite,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        // Waveform
+                        JournalPlayButton(
+                            isPlaying = isPlaying,
+                            onClick = onPlayClick
+                        )
                         JournalWaveform(modifier = Modifier.weight(1f))
-                        // Duration
                         Text(
                             text = duration,
                             fontSize = 12.sp,
-                            color = NLTextSecondary,
+                            color = NLTextPrimary,
                             fontFamily = GeomFamily
                         )
                     }
@@ -642,6 +614,7 @@ private fun JournalTimelineItem(
                     maxLines = 4,
                     overflow = TextOverflow.Ellipsis
                 )
+                }
             }
         }
     }
@@ -649,13 +622,14 @@ private fun JournalTimelineItem(
 
 @Composable
 private fun JournalWaveform(modifier: Modifier = Modifier) {
-    val barCount = 20
-    val heights = listOf(5, 10, 14, 8, 6, 13, 18, 10, 7, 15, 19, 10, 6, 14, 8, 11, 16, 9, 12, 6)
+    val barCount = 40
+    val heights = listOf(3, 6, 10, 5, 8, 12, 4, 9, 14, 7, 3, 11, 6, 8, 13, 5, 10, 4, 7, 12,
+        6, 9, 3, 11, 8, 5, 14, 7, 10, 4, 12, 6, 8, 3, 9, 11, 5, 13, 7, 10)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(24.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(1.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         repeat(barCount) { index ->
@@ -663,10 +637,50 @@ private fun JournalWaveform(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .weight(1f)
                     .height(heights[index % heights.size].dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(
-                        if (index % 3 == 0) NLPrimaryColor else NLTextTertiary
+                    .clip(RoundedCornerShape(1.dp))
+                    .background(NLTextPrimary.copy(alpha = 0.7f))
+            )
+        }
+    }
+}
+
+@Composable
+private fun JournalPlayButton(
+    isPlaying: Boolean,
+    onClick: () -> Unit
+) {
+    val primary = Color(0xFF67B1C0)
+    val cream = NLBackgroundColor
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(NLWhite)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawCircle(
+                color = primary,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(30.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(primary, cream)
                     )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                tint = primary,
+                modifier = Modifier.size(16.dp)
             )
         }
     }
@@ -849,13 +863,13 @@ private fun JournalDetailSheet(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Card with mood + audio player
-                Card(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = NLWhite),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        .padding(horizontal = 24.dp)
+                        .shadow(4.dp, RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         // Mood row + delete
@@ -868,13 +882,14 @@ private fun JournalDetailSheet(
                                 color = Color(0xFFEA6A72),
                                 fontSize = 15.sp,
                                 fontFamily = GeomFamily,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.ExtraBold
                             )
                             Text(
                                 text = mood ?: "Analyzing Audio...",
                                 color = if (mood != null) NLTextPrimary else NLPrimaryColor,
                                 fontSize = 15.sp,
                                 fontFamily = GeomFamily,
+                                fontWeight = FontWeight.ExtraBold,
                                 fontStyle = if (mood == null) FontStyle.Italic else FontStyle.Normal,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -887,7 +902,7 @@ private fun JournalDetailSheet(
                                 Icon(
                                     imageVector = Icons.Outlined.Delete,
                                     contentDescription = "Delete",
-                                    tint = NLError,
+                                    tint = Color(0xFFEA6A72),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -913,34 +928,19 @@ private fun JournalDetailSheet(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(
-                                            Brush.linearGradient(
-                                                listOf(Color(0xFF67B1C0), NLPrimaryColor)
-                                            )
-                                        )
-                                        .clickable {
-                                            entry.audioUrl?.let { url ->
-                                                AudioPlayerManager.playOrToggle(context, url)
-                                            }
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                        contentDescription = if (isPlaying) "Pause" else "Play",
-                                        tint = NLWhite,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
+                                JournalPlayButton(
+                                    isPlaying = isPlaying,
+                                    onClick = {
+                                        entry.audioUrl?.let { url ->
+                                            AudioPlayerManager.playOrToggle(context, url)
+                                        }
+                                    }
+                                )
                                 JournalWaveform(modifier = Modifier.weight(1f))
                                 Text(
                                     text = duration,
                                     fontSize = 12.sp,
-                                    color = NLTextSecondary,
+                                    color = NLTextPrimary,
                                     fontFamily = GeomFamily
                                 )
                             }

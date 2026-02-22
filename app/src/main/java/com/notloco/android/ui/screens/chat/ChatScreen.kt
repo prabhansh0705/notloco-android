@@ -111,7 +111,9 @@ import java.util.TimeZone
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel = hiltViewModel()
+    viewModel: ChatViewModel = hiltViewModel(),
+    profileImageUrl: String? = null,
+    onProfileClick: () -> Unit = {}
 ) {
     val appContext = LocalContext.current
     val chatState by viewModel.chatState.collectAsState()
@@ -156,93 +158,125 @@ fun ChatScreen(
         }
     }
 
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(NLWhite)
             .statusBarsPadding()
     ) {
-        // iOS-style therapist header
-        Row(
+        // Header: profile icon top-right, therapist row below
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 20.dp, end = 64.dp, top = 14.dp, bottom = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(top = 6.dp, bottom = 8.dp)
         ) {
-            // Coach avatar - iOS rounded rect style
-            Box(
+            // Profile icon — top-right above therapist row
+            IconButton(
+                onClick = onProfileClick,
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(NLBackgroundColor),
-                contentAlignment = Alignment.Center
+                    .align(Alignment.TopEnd)
+                    .padding(end = 16.dp)
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
             ) {
                 AsyncImage(
-                    model = coach?.profilePic,
-                    contentDescription = "Coach",
-                    placeholder = androidx.compose.ui.res.painterResource(id = R.drawable.dr_lily),
-                    error = androidx.compose.ui.res.painterResource(id = R.drawable.dr_lily),
+                    model = profileImageUrl,
+                    contentDescription = "Profile",
+                    placeholder = androidx.compose.ui.res.painterResource(id = R.drawable.cheetah_profile),
+                    error = androidx.compose.ui.res.painterResource(id = R.drawable.cheetah_profile),
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(12.dp)),
+                        .clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
             }
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = coach?.name?.ifBlank { "Your Therapist" } ?: "Your Therapist",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 17.sp,
-                    color = NLTextPrimary,
-                    fontFamily = GeomFamily,
-                    letterSpacing = (-0.4).sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    fontSize = 13.sp,
-                    color = NLTextSecondary,
-                    fontFamily = GeomFamily,
-                    letterSpacing = (-0.2).sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Clip
-                )
-            }
-
-            IconButton(
-                onClick = { },
-                enabled = isVideoCheckInAvailable,
+            // Therapist info row with camera icon
+            Row(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isVideoCheckInAvailable) {
-                            Brush.linearGradient(
-                                listOf(
-                                    Color(0xFFE1D45C),
-                                    NLPrimaryColor
-                                )
-                            )
-                        } else {
-                            Brush.linearGradient(
-                                listOf(
-                                    NLTextTertiary.copy(alpha = 0.3f),
-                                    NLTextTertiary.copy(alpha = 0.3f)
-                                )
-                            )
-                        }
-                    )
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 16.dp, top = 40.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Videocam,
-                    contentDescription = "Video check-in",
-                    tint = if (isVideoCheckInAvailable) NLWhite else NLTextSecondary,
-                    modifier = Modifier.size(20.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(NLBackgroundColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = coach?.profilePic,
+                        contentDescription = "Coach",
+                        placeholder = androidx.compose.ui.res.painterResource(id = R.drawable.dr_lily),
+                        error = androidx.compose.ui.res.painterResource(id = R.drawable.dr_lily),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = coach?.name?.ifBlank { "Your Therapist" } ?: "Your Therapist",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 17.sp,
+                        color = NLTextPrimary,
+                        fontFamily = GeomFamily,
+                        letterSpacing = (-0.4).sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        fontSize = 13.sp,
+                        color = NLTextSecondary,
+                        fontFamily = GeomFamily,
+                        letterSpacing = (-0.2).sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Clip
+                    )
+                }
+
+                IconButton(
+                    onClick = { },
+                    enabled = isVideoCheckInAvailable,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isVideoCheckInAvailable) {
+                                Brush.linearGradient(
+                                    listOf(
+                                        Color(0xFFE1D45C),
+                                        NLPrimaryColor
+                                    )
+                                )
+                            } else {
+                                Brush.linearGradient(
+                                    listOf(
+                                        NLTextTertiary.copy(alpha = 0.3f),
+                                        NLTextTertiary.copy(alpha = 0.3f)
+                                    )
+                                )
+                            }
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Videocam,
+                        contentDescription = "Video check-in",
+                        tint = if (isVideoCheckInAvailable) NLWhite else NLTextSecondary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
 
@@ -431,6 +465,7 @@ fun ChatScreen(
                 )
             }
         }
+    }
     }
 
     if (showRecordingScreen) {
