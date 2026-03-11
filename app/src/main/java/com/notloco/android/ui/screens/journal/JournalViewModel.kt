@@ -24,6 +24,14 @@ class JournalViewModel @Inject constructor(
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
+    /** Video URL fetched from journal media API */
+    private val _videoUrl = MutableStateFlow<String?>(null)
+    val videoUrl: StateFlow<String?> = _videoUrl.asStateFlow()
+
+    /** Image URL fetched from journal media API (fallback when no video) */
+    private val _imageUrl = MutableStateFlow<String?>(null)
+    val imageUrl: StateFlow<String?> = _imageUrl.asStateFlow()
+
     private var currentPage = 1
     private var totalPages = 1
     private val allJournals = mutableListOf<JournalEntry>()
@@ -34,6 +42,7 @@ class JournalViewModel @Inject constructor(
 
     init {
         fetchJournals()
+        fetchJournalMedia()
     }
 
     fun fetchJournals() {
@@ -46,6 +55,21 @@ class JournalViewModel @Inject constructor(
     fun loadNextPage() {
         if (isFetching || !canLoadMore) return
         loadPage(page = currentPage + 1, isInitial = false)
+    }
+
+    private fun fetchJournalMedia() {
+        viewModelScope.launch {
+            authRepository.getJournalMedia().collect { resource ->
+                when (resource) {
+                    is Resource.Success -> {
+                        val media = resource.data?.media?.firstOrNull()
+                        _videoUrl.value = media?.videoUrl
+                        _imageUrl.value = media?.imageUrl
+                    }
+                    else -> { /* Silently ignore errors – fallback to static image */ }
+                }
+            }
+        }
     }
 
     private fun loadPage(page: Int, isInitial: Boolean) {

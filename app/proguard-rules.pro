@@ -53,3 +53,8 @@
 
 # Stripe
 -keep class com.stripe.android.** { *; }
+-dontwarn com.stripe.android.financialconnections.**
+
+# gRPC (referenced by coroutines/Firebase)
+-dontwarn io.grpc.internal.**
+-dontwarn io.grpc.**

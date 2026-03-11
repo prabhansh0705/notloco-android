@@ -173,6 +173,20 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    suspend fun getJournalMedia(): Flow<Resource<JournalMediaResponse>> = flow {
+        try {
+            emit(Resource.Loading())
+            val response = apiService.getJournalMedia()
+            if (response.isSuccessful && response.body() != null) {
+                emit(Resource.Success(response.body()!!))
+            } else {
+                emit(Resource.Error(response.message() ?: "Failed to fetch journal media"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.message ?: "An error occurred"))
+        }
+    }
+
     suspend fun getUserCoach(): Flow<Resource<CoachDetails>> = flow {
         try {
             emit(Resource.Loading())
