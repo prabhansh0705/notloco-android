@@ -205,4 +205,7 @@ interface ApiService {
 
     @GET("common/get-media")
     suspend fun getMedia(@Query("name") name: String): Response<MediaResponse>
+
+    @GET("common/get-media")
+    suspend fun getJournalMedia(@Query("name") name: String = "journal"): Response<JournalMediaResponse>
 }
