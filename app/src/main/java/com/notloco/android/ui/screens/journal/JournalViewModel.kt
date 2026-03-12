@@ -10,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import android.util.Log
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -65,11 +66,19 @@ class JournalViewModel @Inject constructor(
                         val media = resource.data?.media?.firstOrNull()
                         _videoUrl.value = media?.videoUrl
                         _imageUrl.value = media?.imageUrl
+                        Log.d(TAG, "Journal media loaded – videoUrl=${media?.videoUrl}, imageUrl=${media?.imageUrl}")
                     }
-                    else -> { /* Silently ignore errors – fallback to static image */ }
+                    is Resource.Error -> {
+                        Log.e(TAG, "Failed to fetch journal media: ${resource.message}")
+                    }
+                    is Resource.Loading -> { /* waiting */ }
                 }
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "JournalViewModel"
     }
 
     private fun loadPage(page: Int, isInitial: Boolean) {

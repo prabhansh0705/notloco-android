@@ -64,9 +64,14 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
@@ -100,6 +105,40 @@ import java.util.TimeZone
 
 /** Curve height in dp for the hero image bottom arc. */
 private const val HERO_CURVE_HEIGHT_DP = 50f
+
+/**
+ * Shape that clips its content with a concave-downward arch at the bottom.
+ * Top and sides are straight; the bottom edge arches upward at the centre
+ * from (W, H) through ≈ (W/2, H−curveHeight) to (0, H).
+ * Edges extend to full height; the centre is trimmed, producing an arch.
+ *
+ * Using clip instead of a Canvas overlay ensures the curve works correctly
+ * on top of AndroidView (native ExoPlayer PlayerView), which otherwise
+ * renders above Compose content regardless of z-order.
+ */
+private class CurvedBottomClipShape(private val curveHeightDp: Float) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val curveHeight = with(density) { curveHeightDp.dp.toPx() }
+        val path = Path().apply {
+            // Top-left → Top-right
+            moveTo(0f, 0f)
+            lineTo(size.width, 0f)
+            // Right edge all the way down to full height
+            lineTo(size.width, size.height)
+            // Curved bottom: right → centre (arches up to H−C) → left
+            quadraticBezierTo(
+                size.width / 2f, size.height - 2f * curveHeight,
+                0f, size.height
+            )
+            close()
+        }
+        return Outline.Generic(path)
+    }
+}
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -829,7 +868,7 @@ private fun JournalPlayButton(
 private fun JournalHeroMedia(videoUrl: String?) {
     val context = LocalContext.current
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
-    val bgColor = NLBackgroundColor
+    val clipShape = remember { CurvedBottomClipShape(HERO_CURVE_HEIGHT_DP) }
 
     if (videoUrl != null) {
         // Video player matching iOS: muted, auto-play, looping
@@ -851,7 +890,12 @@ private fun JournalHeroMedia(videoUrl: String?) {
             }
         }
 
-        Box(modifier = Modifier.fillMaxWidth().height(videoHeightDp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(videoHeightDp)
+                .clip(clipShape)
+        ) {
             AndroidView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
@@ -866,50 +910,22 @@ private fun JournalHeroMedia(videoUrl: String?) {
                 },
                 modifier = Modifier.fillMaxSize()
             )
-            // Curved overlay on bottom corners
-            CurvedBottomOverlay(bgColor = bgColor)
         }
     } else {
-        // Static image with curved overlay on bottom corners
-        Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
+        // Static image clipped to curved bottom shape
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .clip(clipShape)
+        ) {
             Image(
                 painter = androidx.compose.ui.res.painterResource(id = R.drawable.journal_image_ios),
                 contentDescription = "Journal",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-            // Curved overlay on bottom corners
-            CurvedBottomOverlay(bgColor = bgColor)
         }
-    }
-}
-
-/**
- * Draws a background-coloured overlay at the bottom of its parent
- * that masks the left/right corners, producing a convex-downward arc.
- *
- *  Shape: left edge at (0, H−C), arc dipping to ≈ H at centre, right edge at (W, H−C),
- *  then straight lines to (W, H) and (0, H) → close.
- *  The filled area (corners) is painted [bgColor] so only the arched image is visible.
- */
-@Composable
-private fun CurvedBottomOverlay(bgColor: Color) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val curveHeight = HERO_CURVE_HEIGHT_DP.dp.toPx()
-        val overlayPath = Path().apply {
-            // Start at left edge where the curve begins
-            moveTo(0f, size.height - curveHeight)
-            // Quadratic arc across the bottom: control point pushes centre down to ≈ H
-            quadraticBezierTo(
-                size.width / 2f, size.height + curveHeight,
-                size.width, size.height - curveHeight
-            )
-            // Close along the bottom edge of the box
-            lineTo(size.width, size.height)
-            lineTo(0f, size.height)
-            close()
-        }
-        drawPath(overlayPath, color = bgColor)
     }
 }
 
