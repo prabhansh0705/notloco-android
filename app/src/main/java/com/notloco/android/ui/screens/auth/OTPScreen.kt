@@ -33,7 +33,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -213,17 +216,14 @@ private fun OTPInputField(
     onOtpChange: (String) -> Unit,
     otpLength: Int = 4
 ) {
-    Box(contentAlignment = Alignment.Center) {
-        // Hidden text field for keyboard input
-        BasicTextField(
-            value = otp,
-            onValueChange = { if (it.length <= otpLength && it.all { c -> c.isDigit() }) onOtpChange(it) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = TextStyle(color = NLWhite.copy(alpha = 0f)), // Invisible text
-            cursorBrush = SolidColor(NLWhite.copy(alpha = 0f))
-        )
+    val focusRequester = remember { FocusRequester() }
 
-        // Visual OTP boxes
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    Box(contentAlignment = Alignment.Center) {
+        // Visual OTP boxes (drawn first, behind the text field)
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -260,5 +260,18 @@ private fun OTPInputField(
                 }
             }
         }
+
+        // Invisible text field on top to capture taps and keyboard input
+        BasicTextField(
+            value = otp,
+            onValueChange = { if (it.length <= otpLength && it.all { c -> c.isDigit() }) onOtpChange(it) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            textStyle = TextStyle(fontSize = 1.sp, color = NLWhite.copy(alpha = 0f)),
+            cursorBrush = SolidColor(NLWhite.copy(alpha = 0f)),
+            modifier = Modifier
+                .matchParentSize()
+                .alpha(0f)
+                .focusRequester(focusRequester)
+        )
     }
 }

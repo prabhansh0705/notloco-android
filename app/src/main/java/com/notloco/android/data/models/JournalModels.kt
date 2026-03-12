@@ -68,8 +68,23 @@ data class PresignedUrlResponse(
     val fileUrl: String?
 )
 
-// Media Response
+// Media Response (generic)
 data class MediaResponse(
     @SerializedName("data")
     val data: Any?
+)
+
+// Journal Media Response (from /common/get-media?name=journal)
+data class JournalMediaResponse(
+    @SerializedName("media")
+    val media: List<JournalMediaItem>?
+)
+
+data class JournalMediaItem(
+    @SerializedName("name")
+    val name: String?,
+    @SerializedName("video_url")
+    val videoUrl: String?,
+    @SerializedName("image_url")
+    val imageUrl: String?
 )

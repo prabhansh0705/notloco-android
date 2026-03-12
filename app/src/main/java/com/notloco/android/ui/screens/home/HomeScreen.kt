@@ -6,9 +6,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -87,85 +89,81 @@ fun HomeScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         // Main content area
         when (selectedTab) {
-            0 -> ChatScreen()
+            0 -> ChatScreen(
+                profileImageUrl = profileImageUrl,
+                onProfileClick = { showProfile = true }
+            )
             1 -> JournalScreen()
         }
 
-        // iOS-style segmented tab bar at bottom
-        Surface(
+        // Bottom tab bar – flat, full-width, flush to bottom
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
                 .align(Alignment.BottomCenter)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            color = Color.Transparent,
-            shadowElevation = 0.dp
+                .shadow(elevation = 4.dp)
+                .background(NLWhite)
+                .navigationBarsPadding()
         ) {
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
-                    .shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(25.dp),
-                        clip = false
-                    )
-                    .clip(RoundedCornerShape(25.dp))
-                    .background(NLWhite)
+                    .height(64.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(0.dp)
-                ) {
-                    SegmentedTab(
-                        title = "Therapy",
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        modifier = Modifier.weight(1f)
-                    )
-                    SegmentedTab(
-                        title = "Journal",
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                SegmentedTab(
+                    title = "Therapy",
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    modifier = Modifier.weight(1f)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(vertical = 12.dp)
+                        .width(1.dp)
+                        .background(NLBlack.copy(alpha = 0.15f))
+                )
+                SegmentedTab(
+                    title = "Journal",
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 
-        // Profile avatar button - iOS style top right
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .statusBarsPadding()
-                .padding(top = 10.dp, end = 16.dp)
-        ) {
-            IconButton(
-                onClick = { showProfile = true },
+        // Profile avatar for Journal tab only (Therapy has it in its header Row)
+        if (selectedTab == 1) {
+            Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .shadow(4.dp, CircleShape, clip = false)
-                    .clip(CircleShape)
-                    .background(NLWhite)
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 14.dp, end = 16.dp)
             ) {
-                AsyncImage(
-                    model = profileImageUrl,
-                    contentDescription = "Profile",
-                    placeholder = androidx.compose.ui.res.painterResource(id = R.drawable.cheetah_profile),
-                    error = androidx.compose.ui.res.painterResource(id = R.drawable.cheetah_profile),
+                IconButton(
+                    onClick = { showProfile = true },
                     modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
+                        .size(36.dp)
+                        .shadow(4.dp, CircleShape, clip = false)
+                        .clip(CircleShape)
+                        .background(NLWhite)
+                ) {
+                    AsyncImage(
+                        model = profileImageUrl,
+                        contentDescription = "Profile",
+                        placeholder = androidx.compose.ui.res.painterResource(id = R.drawable.cheetah_profile),
+                        error = androidx.compose.ui.res.painterResource(id = R.drawable.cheetah_profile),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                }
             }
         }
     }
 }
 
-/**
- * iOS-style segmented control tab item
- */
 @Composable
 private fun SegmentedTab(
     title: String,
@@ -174,7 +172,7 @@ private fun SegmentedTab(
     modifier: Modifier = Modifier
 ) {
     val backgroundColor by animateColorAsState(
-        targetValue = if (selected) NLBlack else NLWhite,
+        targetValue = if (selected) NLBlack else Color.Transparent,
         animationSpec = tween(250),
         label = "tabBg"
     )
@@ -186,17 +184,15 @@ private fun SegmentedTab(
 
     Box(
         modifier = modifier
-            .fillMaxSize()
-            .padding(4.dp)
-            .clip(RoundedCornerShape(21.dp))
+            .fillMaxHeight()
             .background(backgroundColor)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = title,
-            fontSize = 15.sp,
-            lineHeight = 20.sp,
+            fontSize = 17.sp,
+            lineHeight = 22.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             fontFamily = GeomFamily,
             color = textColor,

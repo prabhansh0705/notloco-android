@@ -6,6 +6,10 @@ import com.notloco.android.data.network.ApiService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -138,11 +142,45 @@ class AuthRepository @Inject constructor(
     suspend fun getJournalList(page: Int = 1): Flow<Resource<JournalListResponse>> = flow {
         try {
             emit(Resource.Loading())
-            val response = apiService.getJournalList(page)
+            val userId = preferencesManager.userId.first()
+            val response = apiService.getJournalList(page, userId)
             if (response.isSuccessful && response.body() != null) {
                 emit(Resource.Success(response.body()!!))
             } else {
                 emit(Resource.Error(response.message() ?: "Failed to fetch journals"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.message ?: "An error occurred"))
+        }
+    }
+
+    suspend fun sendChatMessage(
+        audioFile: File,
+        isVanish: Boolean = false
+    ): Flow<Resource<ChatMessage>> = flow {
+        try {
+            emit(Resource.Loading())
+            val requestBody = audioFile.asRequestBody("audio/mp4".toMediaTypeOrNull())
+            val audioPart = MultipartBody.Part.createFormData("audio", audioFile.name, requestBody)
+            val response = apiService.userSendMessage(audio = audioPart, isVanish = isVanish)
+            if (response.isSuccessful && response.body() != null) {
+                emit(Resource.Success(response.body()!!))
+            } else {
+                emit(Resource.Error(response.message() ?: "Failed to send message"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.message ?: "An error occurred"))
+        }
+    }
+
+    suspend fun getJournalMedia(): Flow<Resource<JournalMediaResponse>> = flow {
+        try {
+            emit(Resource.Loading())
+            val response = apiService.getJournalMedia()
+            if (response.isSuccessful && response.body() != null) {
+                emit(Resource.Success(response.body()!!))
+            } else {
+                emit(Resource.Error(response.message() ?: "Failed to fetch journal media"))
             }
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "An error occurred"))

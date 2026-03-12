@@ -55,7 +55,10 @@ interface ApiService {
 
     // ==================== Journal ====================
     @GET("journal/journals/")
-    suspend fun getJournalList(@Query("page") page: Int = 1): Response<JournalListResponse>
+    suspend fun getJournalList(
+        @Query("page") page: Int = 1,
+        @Query("id") userId: Int? = null
+    ): Response<JournalListResponse>
 
     @Multipart
     @POST("journal/upload-audio/")
@@ -86,7 +89,8 @@ interface ApiService {
     @POST("chat/user/send-message/")
     suspend fun userSendMessage(
         @Part audio: MultipartBody.Part? = null,
-        @Query("reply_to_id") replyToId: Int? = null
+        @Query("reply_to_id") replyToId: Int? = null,
+        @Query("is_vanish") isVanish: Boolean = false
     ): Response<ChatMessage>
 
     @PUT("chat/user/send-message/")
@@ -201,4 +205,7 @@ interface ApiService {
 
     @GET("common/get-media")
     suspend fun getMedia(@Query("name") name: String): Response<MediaResponse>
+
+    @GET("common/get-media")
+    suspend fun getJournalMedia(@Query("name") name: String = "journal"): Response<JournalMediaResponse>
 }
